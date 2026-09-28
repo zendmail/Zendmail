@@ -1,0 +1,750 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------
+   Zendmail design tokens
+  A bright enterprise SaaS scale with deep navy type and restrained
+  blue, green, purple, and orange signals.
+   --------------------------------------------------------- */
+:root {
+    --background: #F8FAFC;
+  --surface: #FFFFFF;
+    --surface-secondary: #F8FAFC;
+    --border: #E6ECF5;
+    --border-strong: #CBD5E1;
+
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #64748B;
+    --text-placeholder: #94A3B8;
+
+    /* Primary: blue for navigation and key actions */
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --primary-surface: #EFF6FF;
+  --primary-text-on: #FFFFFF;
+
+    /* Accent: green for progress, success, and healthy workspace signals. */
+    --accent: #7C3AED;
+    --accent-2: #6D28D9;
+
+    --success: #10B981;
+    --success-surface: #ECFDF5;
+  --warning: #B45309;
+  --warning-surface: #FEF6E7;
+  --danger: #D92D20;
+  --danger-surface: #FEECEB;
+
+  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.04);
+  --shadow-sm: 0 1px 3px 0 rgb(16 24 40 / 0.06), 0 1px 2px -1px rgb(16 24 40 / 0.04);
+  --shadow-md: 0 4px 8px -2px rgb(16 24 40 / 0.08), 0 2px 4px -2px rgb(16 24 40 / 0.04);
+  --shadow-lg: 0 12px 24px -6px rgb(16 24 40 / 0.10), 0 4px 10px -4px rgb(16 24 40 / 0.06);
+  --shadow-focus-primary: 0 0 0 4px rgb(37 99 235 / 0.18);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+
+  --brand-gradient: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+.dark {
+  --background: #0A0B10;
+  --surface: #131420;
+  --surface-secondary: #1B1D2B;
+  --border: #262838;
+  --border-strong: #363A4E;
+
+  --text-primary: #F5F6F8;
+  --text-secondary: #969BAC;
+  --text-tertiary: #6C7086;
+  --text-placeholder: #8793A7;
+
+  --primary: #7C6FF0;
+  --primary-hover: #9088F5;
+  --primary-surface: #221F3C;
+  --primary-text-on: #FFFFFF;
+
+  --accent: #A78BFA;
+  --accent-2: #818CF8;
+
+  --success: #34D399;
+  --success-surface: #0F2A22;
+  --warning: #F59E0B;
+  --warning-surface: #2A2210;
+  --danger: #F97066;
+  --danger-surface: #2C1616;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.45), 0 2px 6px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 16px 32px -8px rgb(0 0 0 / 0.55), 0 4px 12px -4px rgb(0 0 0 / 0.35);
+  --shadow-focus-primary: 0 0 0 4px rgb(124 111 240 / 0.25);
+
+  --brand-gradient: linear-gradient(135deg, var(--primary) 0%, var(--accent-2) 100%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-placeholder: var(--text-placeholder);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-surface: var(--primary-surface);
+  --color-primary-text-on: var(--primary-text-on);
+  --color-accent: var(--accent);
+
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+
+  --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: linear-gradient(180deg, #FFFFFF 0%, var(--color-background) 72%);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+button,
+nav {
+  letter-spacing: -0.01em;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes dashboard-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scroll-reveal {
+  from {
+    opacity: 0.3;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.route-stage {
+  animation: route-enter 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@supports (animation-timeline: view()) {
+  .scroll-reveal {
+    animation: scroll-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 28%;
+  }
+}
+
+@keyframes dashboard-signal {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(15 143 134 / 0.16);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgb(15 143 134 / 0);
+  }
+}
+
+.dashboard-reveal {
+  opacity: 0;
+  animation: dashboard-rise 500ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dashboard-card {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+.dashboard-hero {
+  position: relative;
+  min-height: 156px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, #FFFFFF 0%, #FFFFFF 54%, #F8FBFF 100%);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-xs);
+}
+
+.dashboard-hero-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 50%;
+}
+
+.dashboard-hero h1 {
+  font-weight: 700;
+}
+
+.hero-illustration {
+  position: absolute;
+  top: 6px;
+  right: 4%;
+  width: min(320px, 35%);
+  height: 142px;
+}
+
+.hero-glow {
+  position: absolute;
+  inset: 22px 8% 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgb(37 99 235 / 0.12), rgb(16 185 129 / 0.1));
+  filter: blur(22px);
+}
+
+.hero-window {
+  position: absolute;
+  top: 14px;
+  right: 16%;
+  width: 74%;
+  overflow: hidden;
+  border: 1px solid #DCE6F4;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 18px 40px rgb(11 22 51 / 0.13);
+  transform: perspective(900px) rotateY(-10deg) rotateX(4deg);
+}
+
+.hero-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  background: #F3F7FC;
+}
+
+.hero-window-bar > span {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #CBD5E1;
+}
+
+.hero-window-search {
+  width: 42%;
+  height: 5px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #E2E8F0;
+}
+
+.hero-window-body {
+  display: flex;
+  min-height: 96px;
+}
+
+.hero-window-sidebar {
+  display: flex;
+  width: 18%;
+  flex-direction: column;
+  gap: 8px;
+  padding: 13px 8px;
+  background: #FBFDFF;
+  border-right: 1px solid #EDF2F7;
+}
+
+.hero-window-sidebar i {
+  display: block;
+  width: 70%;
+  height: 5px;
+  border-radius: 999px;
+  background: #DBEAFE;
+}
+
+.hero-window-sidebar i:first-child {
+  width: 90%;
+  background: #2563EB;
+}
+
+.hero-window-content {
+  flex: 1;
+  padding: 10px;
+}
+
+.hero-window-heading,
+.hero-window-kpis {
+  display: flex;
+  gap: 6px;
+}
+
+.hero-window-heading span:first-child {
+  width: 38%;
+  height: 7px;
+  border-radius: 999px;
+  background: #0B1633;
+}
+
+.hero-window-heading span:last-child {
+  width: 18%;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: #E2E8F0;
+}
+
+.hero-window-kpis {
+  margin-top: 9px;
+}
+
+.hero-window-kpis span {
+  flex: 1;
+  height: 18px;
+  border-radius: 5px;
+  background: #EFF6FF;
+}
+
+.hero-window-kpis span:nth-child(2) {
+  background: #ECFDF5;
+}
+
+.hero-window-kpis span:nth-child(3) {
+  background: #F5F3FF;
+}
+
+.hero-chart {
+  position: relative;
+  height: 34px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.hero-chart-line {
+  position: absolute;
+  inset: 10px 2px 0;
+  background: linear-gradient(155deg, transparent 12%, #2563EB 13%, #2563EB 15%, transparent 16%, transparent 27%, #10B981 28%, #10B981 30%, transparent 31%, transparent 43%, #2563EB 44%, #2563EB 46%, transparent 47%, transparent 60%, #10B981 61%, #10B981 63%, transparent 64%);
+  opacity: 0.75;
+}
+
+.hero-chart > span {
+  position: absolute;
+  bottom: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #2563EB;
+}
+
+.hero-chart > span:nth-child(2) { left: 28%; }
+.hero-chart > span:nth-child(3) { left: 50%; background: #10B981; }
+.hero-chart > span:nth-child(4) { left: 72%; }
+
+.hero-float {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #FFFFFF;
+  border-radius: 10px;
+  background: #FFFFFF;
+  box-shadow: 0 10px 24px rgb(11 22 51 / 0.14);
+}
+
+.hero-float-mail {
+  top: 18px;
+  right: 5%;
+  width: 34px;
+  height: 34px;
+  color: #2563EB;
+}
+
+.hero-float-chart {
+  right: 1%;
+  bottom: 18px;
+  width: 32px;
+  height: 32px;
+  color: #10B981;
+}
+
+.hero-float-flow {
+  bottom: 6px;
+  left: 9%;
+  gap: 4px;
+  width: 55px;
+  height: 28px;
+  color: #7C3AED;
+}
+
+@media (max-width: 640px) {
+  .dashboard-hero {
+    min-height: 232px;
+    padding: 20px;
+  }
+
+  .dashboard-hero-copy {
+    max-width: 100%;
+  }
+
+  .hero-illustration {
+    top: auto;
+    right: -5%;
+    bottom: -10px;
+    width: 76%;
+    height: 118px;
+    opacity: 0.65;
+    transform: scale(0.94);
+    transform-origin: right bottom;
+  }
+
+  .dashboard-hero .relative {
+    align-self: flex-start;
+  }
+}
+
+.revenue-illustration {
+  position: relative;
+  width: 152px;
+  height: 92px;
+  margin: 0 auto 2px;
+}
+
+.revenue-bars {
+  position: absolute;
+  right: 17px;
+  bottom: 14px;
+  display: flex;
+  align-items: end;
+  gap: 5px;
+  height: 50px;
+}
+
+.revenue-bars span {
+  width: 14px;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(180deg, #93C5FD, #2563EB);
+}
+
+.revenue-bars span:nth-child(1) { height: 20px; opacity: 0.6; }
+.revenue-bars span:nth-child(2) { height: 30px; opacity: 0.72; }
+.revenue-bars span:nth-child(3) { height: 40px; opacity: 0.84; }
+.revenue-bars span:nth-child(4) { height: 50px; }
+
+.revenue-coin {
+  position: absolute;
+  top: 7px;
+  left: 15px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 6px solid #D1FAE5;
+  border-radius: 50%;
+  background: #10B981;
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgb(16 185 129 / 0.2);
+}
+
+.revenue-spark {
+  position: absolute;
+  right: 0;
+  top: 16px;
+  width: 52px;
+  height: 30px;
+  border-top: 3px solid #2563EB;
+  border-radius: 50%;
+  transform: rotate(-17deg);
+}
+
+.ai-illustration {
+  position: relative;
+  width: 112px;
+  height: 92px;
+  margin: 0 auto 5px;
+}
+
+.ai-core {
+  position: absolute;
+  top: 21px;
+  left: 31px;
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border: 1px solid #DDD6FE;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #F5F3FF, #EFF6FF);
+  color: #7C3AED;
+  box-shadow: 0 10px 24px rgb(124 58 237 / 0.15);
+}
+
+.ai-orbit {
+  position: absolute;
+  border: 1px solid #C4B5FD;
+  border-radius: 50%;
+  opacity: 0.65;
+  transform: rotate(25deg);
+}
+
+.ai-orbit-one {
+  inset: 7px 15px;
+}
+
+.ai-orbit-two {
+  inset: 16px 2px;
+  transform: rotate(-35deg);
+  border-color: #93C5FD;
+}
+
+.ai-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2563EB;
+}
+
+.ai-dot-one { top: 8px; left: 18px; }
+.ai-dot-two { right: 12px; top: 25px; background: #10B981; }
+.ai-dot-three { bottom: 11px; left: 18px; background: #7C3AED; }
+
+.dashboard-signal {
+  animation: dashboard-signal 2.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-reveal {
+    opacity: 1;
+    animation: none;
+  }
+
+  .route-stage,
+  .scroll-reveal {
+    animation: none;
+  }
+
+  .dashboard-card,
+  .dashboard-card:hover,
+  .dashboard-signal {
+    animation: none;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* The one deliberately "bold" element in the system: the brand mark's
+   background. Used only on the logo container (sidebar, auth, onboarding)
+   — never on buttons, cards, or backgrounds, so it stays a signature
+   rather than becoming a second competing color everywhere. */
+.brand-mark {
+  background: var(--brand-gradient);
+  color: var(--primary-text-on);
+}
+
+.social-auth-button {
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+
+.social-auth-button:not(:disabled):hover {
+  transform: scale(1.04);
+  border-color: #C7D2FE;
+  box-shadow: 0 8px 20px rgb(37 99 235 / 0.12), 0 0 0 4px rgb(124 58 237 / 0.06);
+}
+
+.auth-verification-mark {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border: 8px solid #ECFDF5;
+  border-radius: 50%;
+  background: #FFFFFF;
+  animation: verification-pop 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: 0 12px 26px rgb(16 185 129 / 0.16);
+}
+
+@keyframes verification-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.72) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+.logo-lockup {
+  position: relative;
+  background: #0057FF;
+  mask-image: url('/logo.png?brand=green-blue-v4');
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-image: url('/logo.png?brand=green-blue-v4');
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.logo-lockup--two-tone::before,
+.logo-lockup--two-tone::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: #00C853;
+  mask-image: url('/logo.png?brand=green-blue-v4');
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-image: url('/logo.png?brand=green-blue-v4');
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
+/* Green Zend wordmark and the upper green stroke of the mark; blue remains
+   visible underneath for the mail wordmark and lower mark strokes. */
+.logo-lockup--two-tone::before {
+  clip-path: inset(0 31% 0 31%);
+}
+
+.logo-lockup--two-tone::after {
+  clip-path: inset(0 72% 51% 0);
+}
+
+.logo-lockup:hover {
+  transform: translateY(-1px) scale(1.015);
+  filter: drop-shadow(0 4px 8px rgb(37 99 235 / 0.14));
+}
+
+.send-campaign-button {
+  isolation: isolate;
+}
+
+.send-icon,
+.send-ready-mark {
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.send-campaign-button:hover .send-icon {
+  transform: translateX(3px) rotate(-8deg);
+}
+
+.send-ready-mark {
+  margin-left: auto;
+  opacity: 0.65;
+}
+
+.send-spinner {
+  animation: send-spin 900ms linear infinite;
+}
+
+.send-flight-trail {
+  position: absolute;
+  top: 50%;
+  left: -15%;
+  z-index: -1;
+  width: 55%;
+  height: 180%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.26), transparent);
+  transform: translateY(-50%) rotate(-14deg);
+  animation: send-flight 1.15s ease-in-out infinite;
+}
+
+@keyframes send-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes send-flight {
+  from {
+    left: -55%;
+  }
+  to {
+    left: 105%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-lockup,
+  .logo-lockup:hover,
+  .send-icon,
+  .send-spinner,
+  .send-flight-trail {
+    animation: none;
+    transform: none;
+    transition: none;
+  }
+
+  .auth-verification-mark {
+    animation: none;
+  }
+}

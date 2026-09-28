@@ -1,0 +1,1 @@
+ALTER TABLE "store_sync_jobs" ADD COLUMN "range_started_at" timestamp with time zone;
