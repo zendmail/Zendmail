@@ -12,6 +12,8 @@ import { audienceSchema, contentSchema, testEmailSchema, scheduleSchema } from "
 import { dispatchCampaign } from "@/lib/campaigns";
 import { renderBlocksToHtml, renderBlocksToText, createDefaultBlock } from "@/lib/email-blocks";
 import { sendCampaignEmail } from "@/lib/email";
+import { collectSendabilityErrors, extractDomain } from "@/lib/sending-domains";
+import { sendingDomains } from "@/db/schema";
 import type { ActionState } from "@/lib/actions/auth-actions";
 
 async function requireWorkspace() {
@@ -240,6 +242,24 @@ export async function sendTestEmailAction(_prev: TestEmailState, formData: FormD
   }
 
   const blocks = campaign.blocks as EmailBlock[];
+  const domain = extractDomain(campaign.fromEmail);
+  const [sendingDomain] = domain
+    ? await db.select().from(sendingDomains).where(and(eq(sendingDomains.workspaceId, workspace.id), eq(sendingDomains.domain, domain))).limit(1)
+    : [null];
+
+  const sendabilityErrors = collectSendabilityErrors({
+    fromEmail: campaign.fromEmail,
+    replyTo: campaign.replyTo ?? undefined,
+    status: sendingDomain?.status,
+    domainVerified: Boolean(sendingDomain && sendingDomain.status === "VERIFIED"),
+    workspaceVerifiedDomain: Boolean(sendingDomain && sendingDomain.workspaceId === workspace.id && sendingDomain.status === "VERIFIED"),
+    customMailFromConfigured: Boolean(sendingDomain?.mailFrom),
+  });
+
+  if (sendabilityErrors.length > 0) {
+    return { error: sendabilityErrors[0] };
+  }
+
   try {
     await sendCampaignEmail({
       to: parsed.data.email,

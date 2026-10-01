@@ -106,7 +106,30 @@ function formatFrom(name: string, email: string) {
  * workspace's chosen From name is kept, but if its address isn't on a verified domain
  * the message goes out from DEFAULT_FROM with Reply-To set to the workspace's address.
  */
-function resolveSender(fromName: string, fromEmail: string) {
+export function isVerifiedDomain(domain: string) {
+  return VERIFIED_DOMAINS.includes(domain.toLowerCase());
+}
+
+export function validateSenderAddress(fromEmail: string, replyTo?: string) {
+  const domain = fromEmail.split("@")[1]?.toLowerCase() ?? "";
+  const errors: string[] = [];
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fromEmail)) {
+    errors.push("Sender email is invalid.");
+  }
+
+  if (replyTo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(replyTo)) {
+    errors.push("Reply-To email is invalid.");
+  }
+
+  if (!domain || !isVerifiedDomain(domain)) {
+    errors.push(`The sending domain ${domain || "<unknown>"} is not verified. Add and verify it first.`);
+  }
+
+  return errors;
+}
+
+export function resolveSender(fromName: string, fromEmail: string) {
   const domain = fromEmail.split("@")[1]?.toLowerCase() ?? "";
   if (VERIFIED_DOMAINS.includes(domain)) {
     return { from: formatFrom(fromName, fromEmail), replyTo: undefined };
@@ -156,6 +179,11 @@ export async function sendCampaignEmail(input: {
   /** Per-recipient unsubscribe link; added as a List-Unsubscribe header so mail apps show an "Unsubscribe" button. */
   unsubscribeUrl?: string;
 }) {
+  const validationErrors = validateSenderAddress(input.fromEmail);
+  if (validationErrors.length > 0) {
+    throw new Error(validationErrors[0]);
+  }
+
   const { from, replyTo } = resolveSender(input.fromName, input.fromEmail);
   await provider.send({
     to: input.to,

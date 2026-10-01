@@ -74,7 +74,11 @@ class RedisLimiter implements Limiter {
 
 const limiter: Limiter = process.env.UPSTASH_REDIS_REST_URL ? new RedisLimiter() : new InMemoryLimiter();
 
-if (process.env.NODE_ENV === "production" && !process.env.UPSTASH_REDIS_REST_URL) {
+if (
+  process.env.NODE_ENV === "production" &&
+  !process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.NEXT_PHASE !== "phase-production-build"
+) {
   console.warn(
     "[rate-limit] UPSTASH_REDIS_REST_URL is not set — falling back to in-memory rate limiting, " +
       "which does NOT work correctly across multiple server instances. Set up Upstash Redis " +

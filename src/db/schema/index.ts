@@ -3,6 +3,7 @@ export * from "./workspace";
 export * from "./audit";
 export * from "./contacts";
 export * from "./segments";
+export * from "./sending";
 export * from "./campaigns";
 export * from "./automations";
 export * from "./feature-flags";
