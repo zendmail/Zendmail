@@ -9,23 +9,26 @@ export function AppShell({
   children,
   workspaceName,
   planName,
+  userName,
 }: {
   children: React.ReactNode;
   workspaceName: string;
   planName: string;
+  userName: string;
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        workspaceName={workspaceName}
+        planName={planName}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar
-          onMenuClick={() => setMobileOpen(true)}
-          workspaceName={workspaceName}
-          planName={planName}
-        />
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+        <Topbar onMenuClick={() => setMobileOpen(true)} userName={userName} planName={planName} />
+        <main className="flex-1 px-4 py-6 lg:px-5 lg:py-5">
           <RouteTransition>{children}</RouteTransition>
         </main>
       </div>

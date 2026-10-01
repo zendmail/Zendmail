@@ -1,21 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BarChart3 } from "lucide-react";
-import {
-  Bar,
-  CartesianGrid,
-  ComposedChart,
-  Legend,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createDraftCampaignAction } from "@/lib/actions/campaign-actions";
+import { ArrowRight, ChartColumn } from "lucide-react";
+import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ChartSearchArt } from "@/components/dashboard/dashboard-illustrations";
+import { PerformanceRangeSelect } from "@/components/dashboard/performance-range-select";
+import { createDraftCampaignAction } from "@/lib/actions/campaign-actions";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 type CampaignPerformancePoint = {
@@ -27,34 +19,77 @@ type CampaignPerformancePoint = {
   clickRate: number;
 };
 
-export function CampaignPerformance({ data }: { data: CampaignPerformancePoint[] }) {
+const OPEN = "#0B5FFF";
+const CLICK = "#8B5CF6";
+const SENT = "#10B981";
+
+function LegendItem({ color, label }: { color: string; label: string }) {
   return (
-    <Card className="dashboard-card">
-      <CardHeader>
-        <div>
-          <CardTitle>Campaign performance</CardTitle>
-          <CardDescription>Recent sent campaigns: delivery and engagement</CardDescription>
+    <span className="flex items-center gap-1.5 text-[11.5px] font-medium text-text-secondary">
+      <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+      {label}
+    </span>
+  );
+}
+
+export function CampaignPerformance({
+  data,
+  range,
+  hasSentCampaigns,
+}: {
+  data: CampaignPerformancePoint[];
+  range: string;
+  hasSentCampaigns: boolean;
+}) {
+  return (
+    <Card className="dashboard-card p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <ChartColumn size={24} className="mt-0.5 text-primary" strokeWidth={2.2} />
+          <div>
+            <h2 className="text-[16px] font-bold leading-tight text-text-primary">Campaign performance</h2>
+            <p className="mt-1 text-[13px] text-text-secondary">Track how your campaigns are performing over time.</p>
+          </div>
         </div>
-        <Link href="/analytics/campaigns" className="text-[12px] font-semibold text-primary hover:underline">
-          View analytics <ArrowRight size={13} className="ml-1 inline" />
-        </Link>
-      </CardHeader>
-      <CardContent>
+        <PerformanceRangeSelect value={range} />
+      </div>
+
+      <div className="mt-4 rounded-[14px] border border-border bg-surface-secondary/40 p-4">
+        <div className="flex items-center justify-end gap-4">
+          <LegendItem color={OPEN} label="Open rate" />
+          <LegendItem color={CLICK} label="Click rate" />
+          <LegendItem color={SENT} label="Sent" />
+        </div>
+
         {data.length === 0 ? (
-          <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-[var(--radius-md)] border border-dashed border-border bg-surface-secondary/45 px-5 py-8 text-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-primary-surface text-primary">
-              <BarChart3 size={19} />
-            </span>
-            <p className="mt-1 text-[14px] font-semibold text-text-primary">No campaign data yet</p>
-            <p className="max-w-sm text-[13px] leading-[1.5] text-text-secondary">
-              Create your first campaign to start tracking performance.
-            </p>
-            <form action={createDraftCampaignAction} className="mt-1">
-              <Button type="submit" size="sm">Create campaign <ArrowRight size={14} /></Button>
-            </form>
+          <div className="flex min-h-[210px] flex-col items-center justify-center gap-1 pb-3 text-center">
+            <ChartSearchArt className="h-[92px] w-auto" />
+            {hasSentCampaigns ? (
+              <>
+                <p className="mt-1 text-[14.5px] font-bold text-text-primary">No campaigns sent in this period</p>
+                <p className="max-w-sm text-[12.5px] leading-[1.5] text-text-secondary">
+                  Try a longer time range to see earlier campaigns.
+                </p>
+                <Link href="/analytics/campaigns" className="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-primary hover:underline">
+                  View campaign analytics <ArrowRight size={14} />
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="mt-1 text-[14.5px] font-bold text-text-primary">No campaign data yet</p>
+                <p className="max-w-sm text-[12.5px] leading-[1.5] text-text-secondary">
+                  Create your first campaign to start tracking performance.
+                </p>
+                <form action={createDraftCampaignAction} className="mt-3">
+                  <Button type="submit" className="h-10 rounded-[10px] px-5 text-[13px]">
+                    Create campaign <ArrowRight size={15} />
+                  </Button>
+                </form>
+              </>
+            )}
           </div>
         ) : (
-          <div className="h-[250px] w-full" role="img" aria-label="Recent campaign sent volume, open rate and click rate chart">
+          <div className="mt-2 h-[240px] w-full" role="img" aria-label="Recent campaign sent volume, open rate and click rate chart">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={data} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
@@ -74,15 +109,14 @@ export function CampaignPerformance({ data }: { data: CampaignPerformancePoint[]
                     fontSize: 12,
                   }}
                 />
-                <Legend verticalAlign="bottom" height={28} iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 11 }} />
-                <Bar yAxisId="sent" dataKey="sent" name="Sent" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-                <Line yAxisId="rate" type="monotone" dataKey="openRate" name="Open rate" stroke="#0F8F86" strokeWidth={2} dot={{ r: 3 }} />
-                <Line yAxisId="rate" type="monotone" dataKey="clickRate" name="Click rate" stroke="#D97706" strokeWidth={2} dot={{ r: 3 }} />
+                <Bar yAxisId="sent" dataKey="sent" name="Sent" fill={SENT} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                <Line yAxisId="rate" type="monotone" dataKey="openRate" name="Open rate" stroke={OPEN} strokeWidth={2} dot={{ r: 3 }} />
+                <Line yAxisId="rate" type="monotone" dataKey="clickRate" name="Click rate" stroke={CLICK} strokeWidth={2} dot={{ r: 3 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 }

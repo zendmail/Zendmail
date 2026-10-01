@@ -37,7 +37,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-[20px] font-semibold tracking-tight text-text-primary">{campaign.name}</h1>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.025em] text-text-primary">{campaign.name}</h1>
           <CampaignStatusBadge status={campaign.status} />
         </div>
         <form action={deleteCampaignAction}>

@@ -35,7 +35,7 @@ export default async function SegmentDetailPage({ params }: { params: Promise<{ 
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-text-primary">{segment.name}</h1>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.025em] text-text-primary">{segment.name}</h1>
           {segment.description && <p className="mt-1 text-[13.5px] text-text-secondary">{segment.description}</p>}
         </div>
         <div className="flex gap-2">

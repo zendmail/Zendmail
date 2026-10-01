@@ -20,7 +20,7 @@ export default async function CampaignAnalyticsPage() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">Campaign analytics</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">Campaign analytics</h1>
         <p className="mt-1 text-[13.5px] text-text-secondary">Performance for every campaign you&apos;ve sent.</p>
       </div>
 

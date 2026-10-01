@@ -20,3 +20,17 @@ export function formatNumber(value: number) {
 export function formatPercent(value: number, digits = 1) {
   return `${value.toFixed(digits)}%`;
 }
+
+
+/**
+ * Display-friendly person name: names typed in ALL CAPS (or all lowercase) are shown in
+ * Title Case ("MOHAMMED" -> "Mohammed"); mixed-case names are left exactly as typed.
+ */
+export function formatPersonName(name: string) {
+  const trimmed = name.trim();
+  const letters = trimmed.replace(/[^\p{L}]/gu, "");
+  if (!letters || (letters !== letters.toUpperCase() && letters !== letters.toLowerCase())) return trimmed;
+  return trimmed
+    .toLowerCase()
+    .replace(/(^|[\s'-])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toUpperCase());
+}

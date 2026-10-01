@@ -44,7 +44,7 @@ export default async function ContactProfilePage({ params }: { params: Promise<{
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-[20px] font-semibold tracking-tight text-text-primary">{name}</h1>
+            <h1 className="text-[22px] font-extrabold tracking-[-0.025em] text-text-primary">{name}</h1>
             <ContactStatusBadge status={contact.status} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-text-secondary">

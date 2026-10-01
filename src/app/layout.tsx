@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import "@fontsource-variable/inter";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
-// Inter is loaded via next/font/google in production. This sandbox has no
-// outbound access to fonts.googleapis.com, so we fall back to the closest
-// system stack here — swap back to `next/font/google` Inter when deploying.
+// Inter is self-hosted through @fontsource-variable/inter (no request to Google Fonts,
+// so it also works offline and under the strict CSP in next.config.ts).
 
 export const metadata: Metadata = {
   title: "Zendmail — Create. Automate. Convert.",

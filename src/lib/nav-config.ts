@@ -1,15 +1,14 @@
 import {
-  LayoutDashboard,
+  LayoutGrid,
   Send,
-  Workflow,
+  Waypoints,
   LayoutTemplate,
   Users,
-  PieChart,
+  Network,
   FileText,
-  MousePointerClick,
+  SquareMousePointer,
   Sparkles,
   Wand2,
-  MessagesSquare,
   Store,
   UserRound,
   ShoppingCart,
@@ -41,23 +40,15 @@ export interface NavGroup {
 export const navGroups: NavGroup[] = [
   {
     label: null,
-    items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
-  },
-  {
-    label: "Marketing",
     items: [
+      { label: "Dashboard", href: "/dashboard", icon: LayoutGrid },
       { label: "Campaigns", href: "/campaigns", icon: Send },
-      { label: "Automations", href: "/automations", icon: Workflow },
+      { label: "Automations", href: "/automations", icon: Waypoints },
       { label: "Templates", href: "/templates", icon: LayoutTemplate },
-    ],
-  },
-  {
-    label: "Audience",
-    items: [
       { label: "Contacts", href: "/contacts", icon: Users },
-      { label: "Segments", href: "/segments", icon: PieChart },
+      { label: "Segments", href: "/segments", icon: Network },
       { label: "Forms", href: "/forms", icon: FileText },
-      { label: "Landing Pages", href: "/landing-pages", icon: MousePointerClick },
+      { label: "Landing Pages", href: "/landing-pages", icon: SquareMousePointer },
     ],
   },
   {
@@ -65,7 +56,6 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "AI Studio", href: "/ai/studio", icon: Sparkles },
       { label: "Audience Builder", href: "/ai/audience-builder", icon: Wand2 },
-      { label: "Campaign Coach", href: "/ai/campaign-coach", icon: MessagesSquare, badge: "Soon" },
     ],
   },
   {
@@ -88,12 +78,9 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: null,
-    items: [{ label: "Integrations", href: "/integrations", icon: Plug }],
-  },
-  {
     label: "Workspace",
     items: [
+      { label: "Integrations", href: "/integrations", icon: Plug },
       { label: "Team", href: "/workspace/team", icon: UsersRound },
       { label: "Billing", href: "/workspace/billing", icon: CreditCard },
       { label: "Settings", href: "/workspace/settings", icon: Settings },

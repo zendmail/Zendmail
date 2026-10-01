@@ -5,7 +5,7 @@ export default function RevenueAnalyticsPage() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">Revenue</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">Revenue</h1>
         <p className="mt-1 text-[13.5px] text-text-secondary">Revenue attribution across campaigns and automations.</p>
       </div>
       <ComingSoon

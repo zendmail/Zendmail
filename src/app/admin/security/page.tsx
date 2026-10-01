@@ -16,7 +16,7 @@ export default async function AdminSecurityPage() {
   return (
     <div className="max-w-[1000px] space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">Security</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">Security</h1>
         <p className="mt-1 text-[13.5px] text-text-secondary">
           Security-relevant account events across the platform. Anomaly detection and abuse alerts are a planned
           upgrade — this view shows the real underlying event log today.

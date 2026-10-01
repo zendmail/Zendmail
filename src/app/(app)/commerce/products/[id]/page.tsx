@@ -38,7 +38,7 @@ export default async function DigitalProductDetailPage({ params }: { params: Pro
       </Link>
 
       <div className="flex items-center gap-2.5">
-        <h1 className="text-[20px] font-semibold tracking-tight text-text-primary">{product.name}</h1>
+        <h1 className="text-[22px] font-extrabold tracking-[-0.025em] text-text-primary">{product.name}</h1>
         <Badge tone="neutral">{product.type}</Badge>
       </div>
 

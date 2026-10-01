@@ -21,7 +21,7 @@ export default async function AuthenticatedAppLayout({ children }: { children: R
   }
 
   return (
-    <AppShell workspaceName={workspace.name} planName={workspace.planName}>
+    <AppShell workspaceName={workspace.name} planName={workspace.planName} userName={user.name}>
       {children}
     </AppShell>
   );

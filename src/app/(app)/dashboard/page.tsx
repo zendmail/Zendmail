@@ -1,72 +1,90 @@
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { KpiGrid } from "@/components/dashboard/kpi-grid";
 import { CampaignPerformance } from "@/components/dashboard/campaign-performance";
 import { RecentCampaigns } from "@/components/dashboard/recent-campaigns";
 import { AiInsights } from "@/components/dashboard/ai-insights";
 import { AutomationPerformance } from "@/components/dashboard/side-panels";
 import { LaunchPad } from "@/components/dashboard/launch-pad";
-import { HeroIllustration } from "@/components/dashboard/dashboard-illustrations";
-import { createDraftCampaignAction } from "@/lib/actions/campaign-actions";
+import { WelcomeHero } from "@/components/dashboard/welcome-hero";
+import { CtaCard } from "@/components/dashboard/cta-card";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
-import { getDashboardData } from "@/lib/dashboard";
+import { getDashboardData, parsePerformanceRange } from "@/lib/dashboard";
+import { formatCurrency, formatPercent, formatPersonName } from "@/lib/utils";
 
-export default async function DashboardPage() {
+/** "Good morning" / "Good afternoon" / "Good evening" in the workspace's own timezone. */
+function greetingFor(timezone: string) {
+  let hour: number;
+  try {
+    hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: timezone }).format(new Date())) % 24;
+  } catch {
+    hour = new Date().getHours();
+  }
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const workspace = await getActiveWorkspaceForUser(user.id);
   if (!workspace) redirect("/onboarding/create");
 
-  const data = await getDashboardData(workspace.id, workspace.currency);
+  const { range: rangeParam } = await searchParams;
+  const range = parsePerformanceRange(rangeParam);
+  const data = await getDashboardData(workspace.id, workspace.currency, range);
+
+  const displayName = formatPersonName(user.name);
+  const firstName = displayName.split(/\s+/)[0] || displayName;
+  const hasSentEmail = data.emailOverview.sent > 0;
 
   return (
-    <div className="dashboard-reveal mx-auto max-w-[1400px] space-y-4">
-      <div className="dashboard-hero flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="dashboard-hero-copy">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Workspace overview</p>
-          <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.02em] text-text-primary">
-            Good morning, {workspace.name}
-          </h1>
-          <p className="mt-1.5 text-[14px] font-normal leading-[1.5] text-text-secondary">
-            Here&apos;s what&apos;s happening with your marketing.
-          </p>
-        </div>
-        <form action={createDraftCampaignAction} className="relative z-20 sm:mr-1">
-          <Button type="submit" className="h-10 rounded-[8px] px-4 text-[13px] font-semibold">
-            <Plus size={16} /> Create campaign
-          </Button>
-        </form>
-        <HeroIllustration />
+    <div className="mx-auto grid max-w-[1560px] grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_316px]">
+      <div className="min-w-0 space-y-5">
+        <WelcomeHero
+          greeting={greetingFor(workspace.timezone)}
+          firstName={firstName}
+          contactTotal={data.contactCounts.total}
+          sentThisMonth={data.sentThisMonthCount}
+          openRate={hasSentEmail ? formatPercent(data.emailOverview.openRate) : null}
+          revenue={data.revenue === null ? null : formatCurrency(data.revenue, workspace.currency)}
+        />
+
+        <LaunchPad />
+
+        <KpiGrid
+          contactTotal={data.contactCounts.total}
+          sentCampaignCount={data.sentCampaignCount}
+          openRate={data.emailOverview.openRate}
+          clickRate={data.emailOverview.clickRate}
+          hasSentEmail={hasSentEmail}
+          revenue={data.revenue}
+          currency={workspace.currency}
+        />
+
+        <CampaignPerformance
+          data={data.campaignPerformance}
+          range={data.performanceRange}
+          hasSentCampaigns={data.hasSentCampaigns}
+        />
+
+        <RecentCampaigns campaigns={data.recentCampaigns} />
       </div>
 
-      <LaunchPad />
-
-      <KpiGrid
-        contactTotal={data.contactCounts.total}
-        sentCampaignCount={data.sentCampaignCount}
-        openRate={data.emailOverview.openRate}
-        clickRate={data.emailOverview.clickRate}
-        hasSentEmail={data.emailOverview.sent > 0}
-        revenue={data.revenue}
-        currency={workspace.currency}
-      />
-
-      <div className="dashboard-reveal grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(290px,1fr)]" style={{ animationDelay: "120ms" }}>
-        <div className="min-w-0 space-y-4">
-          <CampaignPerformance data={data.campaignPerformance} />
-          <RecentCampaigns campaigns={data.recentCampaigns} />
-        </div>
-        <div className="space-y-4">
-          <AiInsights insights={data.insights} hasContacts={data.contactCounts.total > 0} />
-          <AutomationPerformance
-            automations={data.automationSummary}
-            activeCount={data.activeAutomationCount}
-            recentActivity={data.recentAutomationActivity}
-          />
-        </div>
-      </div>
+      <aside className="space-y-4">
+        <AiInsights insights={data.insights} hasContacts={data.contactCounts.total > 0} />
+        <AutomationPerformance
+          automations={data.automationSummary}
+          activeCount={data.activeAutomationCount}
+          recentActivity={data.recentAutomationActivity}
+        />
+        <CtaCard />
+      </aside>
     </div>
   );
 }

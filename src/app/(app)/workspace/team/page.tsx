@@ -26,7 +26,7 @@ export default async function TeamPage() {
   return (
     <div className="mx-auto max-w-[900px] space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">Team</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">Team</h1>
         <p className="mt-1 text-[13.5px] text-text-secondary">
           Members of this workspace. Invites and role management are coming soon.
         </p>

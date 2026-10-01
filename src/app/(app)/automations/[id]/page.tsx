@@ -42,7 +42,7 @@ export default async function AutomationDetailPage({ params }: { params: Promise
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-[20px] font-semibold tracking-tight text-text-primary">{automation.name}</h1>
+          <h1 className="text-[22px] font-extrabold tracking-[-0.025em] text-text-primary">{automation.name}</h1>
           <Badge tone={statusTone[automation.status]}>
             {automation.status.charAt(0) + automation.status.slice(1).toLowerCase()}
           </Badge>

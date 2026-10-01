@@ -23,7 +23,7 @@ export default async function CampaignsPage() {
     <div className="mx-auto max-w-[1200px] space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">Campaigns</h1>
+          <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">Campaigns</h1>
           <p className="mt-1 text-[13.5px] text-text-secondary">
             {formatNumber(campaigns.length)} campaign{campaigns.length === 1 ? "" : "s"}
           </p>

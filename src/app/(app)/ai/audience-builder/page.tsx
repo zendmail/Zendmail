@@ -7,7 +7,7 @@ export default function AudienceBuilderPage() {
   return (
     <div className="mx-auto max-w-[1200px] space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">AI Audience Builder</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">AI Audience Builder</h1>
         <p className="mt-1 text-[13.5px] text-text-secondary">
           Describe an audience in plain language and get a segment.
         </p>

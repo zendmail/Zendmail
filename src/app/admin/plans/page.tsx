@@ -9,7 +9,7 @@ export default async function AdminPlansPage() {
   return (
     <div className="max-w-[1000px] space-y-6">
       <div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-text-primary">Plans</h1>
+        <h1 className="text-[24px] font-extrabold tracking-[-0.025em] text-text-primary">Plans</h1>
         <p className="mt-1 text-[13.5px] text-text-secondary">
           Edit pricing and usage limits. Changes apply to all workspaces on this plan going forward.
         </p>
