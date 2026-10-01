@@ -5,6 +5,7 @@ import { campaigns, campaignRecipients, contacts, suppressionEntries, segments, 
 import { buildSegmentCondition, type RuleInput } from "./segments";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
+import { appUrl } from "./app-url";
 
 export async function listCampaigns(workspaceId: string) {
   return db
@@ -178,23 +179,34 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string) 
 
   const blocks = campaign.blocks as EmailBlock[];
 
+  let failed = 0;
   for (const contact of audience) {
     const [recipient] = await db
       .insert(campaignRecipients)
       .values({ campaignId, contactId: contact.id, status: "PENDING" })
       .returning();
 
-    const html = renderBlocksToHtml(blocks, { recipientId: recipient.id });
-    const text = renderBlocksToText(blocks);
+    const tracking = { recipientId: recipient.id };
+    const html = renderBlocksToHtml(blocks, tracking);
+    const text = renderBlocksToText(blocks, tracking);
 
-    await sendCampaignEmail({
-      to: contact.email,
-      fromName: campaign.fromName,
-      fromEmail: campaign.fromEmail,
-      subject: campaign.subject,
-      html,
-      text,
-    });
+    try {
+      await sendCampaignEmail({
+        to: contact.email,
+        fromName: campaign.fromName,
+        fromEmail: campaign.fromEmail,
+        subject: campaign.subject,
+        html,
+        text,
+        unsubscribeUrl: appUrl(`/api/t/unsubscribe/${recipient.id}`),
+      });
+    } catch (error) {
+      // A single rejected address (or a provider hiccup) must not strand the whole campaign in SENDING.
+      console.error(`[campaign ${campaignId}] send to recipient ${recipient.id} failed:`, error instanceof Error ? error.message : error);
+      await db.update(campaignRecipients).set({ status: "FAILED" }).where(eq(campaignRecipients.id, recipient.id));
+      failed += 1;
+      continue;
+    }
 
     await db
       .update(campaignRecipients)
@@ -202,12 +214,22 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string) 
       .where(eq(campaignRecipients.id, recipient.id));
   }
 
+  if (audience.length > 0 && failed === audience.length) {
+    // Nothing went out at all (bad API key, unverified domain...). Put the campaign back so it can be fixed and retried.
+    await db
+      .update(campaigns)
+      .set({ status: "DRAFT", updatedAt: new Date() })
+      .where(eq(campaigns.id, campaignId));
+    await db.delete(campaignRecipients).where(eq(campaignRecipients.campaignId, campaignId));
+    throw new Error("No emails could be sent. Check your email provider settings (API key and verified sending domain), then try again.");
+  }
+
   await db
     .update(campaigns)
-    .set({ status: "SENT", sentAt: new Date(), recipientCount: audience.length, updatedAt: new Date() })
+    .set({ status: "SENT", sentAt: new Date(), recipientCount: audience.length - failed, updatedAt: new Date() })
     .where(eq(campaigns.id, campaignId));
 
-  return audience.length;
+  return audience.length - failed;
 }
 
 /**

@@ -240,14 +240,19 @@ export async function sendTestEmailAction(_prev: TestEmailState, formData: FormD
   }
 
   const blocks = campaign.blocks as EmailBlock[];
-  await sendCampaignEmail({
-    to: parsed.data.email,
-    fromName: campaign.fromName,
-    fromEmail: campaign.fromEmail,
-    subject: `[TEST] ${campaign.subject}`,
-    html: renderBlocksToHtml(blocks),
-    text: renderBlocksToText(blocks),
-  });
+  try {
+    await sendCampaignEmail({
+      to: parsed.data.email,
+      fromName: campaign.fromName,
+      fromEmail: campaign.fromEmail,
+      subject: `[TEST] ${campaign.subject}`,
+      html: renderBlocksToHtml(blocks),
+      text: renderBlocksToText(blocks),
+    });
+  } catch (error) {
+    console.error("Test email failed:", error instanceof Error ? error.message : error);
+    return { error: "The test email couldn't be sent. Check your email provider settings and try again." };
+  }
 
   return { success: `Test email sent to ${parsed.data.email}.` };
 }
@@ -257,7 +262,13 @@ export async function sendCampaignNowAction(formData: FormData) {
   const campaignId = String(formData.get("campaignId"));
   await requireDraftCampaign(workspace.id, campaignId);
 
-  const count = await dispatchCampaign(workspace.id, campaignId);
+  let count: number;
+  try {
+    count = await dispatchCampaign(workspace.id, campaignId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The campaign couldn't be sent.";
+    redirect(`/campaigns/${campaignId}/review?sendError=${encodeURIComponent(message)}`);
+  }
   await recordAuditLog({
     action: "campaign.sent",
     userId,

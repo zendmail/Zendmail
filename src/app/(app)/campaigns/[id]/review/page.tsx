@@ -14,8 +14,16 @@ import { sendCampaignNowAction } from "@/lib/actions/campaign-actions";
 import { formatNumber } from "@/lib/utils";
 import type { EmailBlock } from "@/db/schema";
 
-export default async function CampaignReviewPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CampaignReviewPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const { sendError } = await searchParams;
+  const sendErrorMessage = typeof sendError === "string" ? sendError.slice(0, 300) : null;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const workspace = await getActiveWorkspaceForUser(user.id);
@@ -126,6 +134,11 @@ export default async function CampaignReviewPage({ params }: { params: Promise<{
                 <CardTitle>Send</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {sendErrorMessage && (
+                  <p role="alert" className="rounded-[10px] bg-danger-surface px-3 py-2.5 text-[13px] text-danger">
+                    {sendErrorMessage}
+                  </p>
+                )}
                 <form action={sendCampaignNowAction}>
                   <input type="hidden" name="campaignId" value={id} />
                   <SendCampaignButton

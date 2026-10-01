@@ -69,7 +69,7 @@ function renderBlock(block: EmailBlock, tracking: TrackingContext): string {
   }
 }
 
-export function renderBlocksToText(blocks: EmailBlock[]): string {
+export function renderBlocksToText(blocks: EmailBlock[], tracking: TrackingContext = null): string {
   return blocks
     .map((block) => {
       switch (block.type) {
@@ -86,7 +86,7 @@ export function renderBlocksToText(blocks: EmailBlock[]): string {
         case "spacer":
           return "";
         case "footer":
-          return `${block.text}\nUnsubscribe: {{unsubscribe_url}}`;
+          return `${block.text}\nUnsubscribe: ${tracking ? appUrl(`/api/t/unsubscribe/${tracking.recipientId}`) : "{{unsubscribe_url}}"}`;
         default:
           return "";
       }

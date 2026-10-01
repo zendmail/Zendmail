@@ -83,35 +83,19 @@ The code auto-detects these and switches from in-memory to distributed rate limi
 
 ---
 
-## 4. Email: pick one real provider (15 minutes)
+## 4. Email: connect Resend (15 minutes)
 
-Right now `src/lib/email.ts` logs emails to the console instead of sending them — that's intentional for development, but it means **verification emails, password resets, and campaign sends currently go nowhere** in this codebase as shipped. Before going live:
+`src/lib/email.ts` sends through **Resend** automatically as soon as `EMAIL_PROVIDER_API_KEY` is set. With no key it falls back to printing emails in the terminal (useful for local development: verification and reset links appear there).
 
-1. Sign up for **Resend** (simplest API) or **Postmark** (excellent deliverability reputation).
-2. Verify your sending domain (add the DKIM/SPF DNS records they give you — this is what keeps your emails out of spam).
-3. Get an API key.
-4. Replace the `ConsoleEmailProvider` class in `src/lib/email.ts` with a real implementation. Example for Resend:
+1. Sign up at https://resend.com and create an **API key**.
+2. **Quick test:** with only the key set, mail is sent from `onboarding@resend.dev`, but Resend only delivers those to your own Resend account email.
+3. **Going live:** add and verify your sending domain in Resend (the DKIM/SPF DNS records keep you out of spam), then set:
+   - `EMAIL_PROVIDER_API_KEY` = your Resend API key
+   - `EMAIL_FROM` = `Zendmail <hello@yourdomain.com>` (used for verification and password-reset emails)
+   - `EMAIL_VERIFIED_DOMAINS` = `yourdomain.com` (comma-separated). Campaigns whose "From" address is on one of these domains send as-is. Any other From address (for example a Gmail address) is sent from `EMAIL_FROM` instead, with Reply-To set to the workspace's address, so mail is never rejected for an unverified domain.
+4. Restart the app. Use **Send test email** on a campaign's review step to confirm delivery.
 
-   ```ts
-   import { Resend } from "resend";
-   const resend = new Resend(process.env.EMAIL_PROVIDER_API_KEY);
-
-   class ResendEmailProvider implements EmailProvider {
-     async send(input: SendEmailInput) {
-       await resend.emails.send({
-         from: "MAILORA <hello@yourdomain.com>",
-         to: input.to,
-         subject: input.subject,
-         html: input.html,
-         text: input.text,
-       });
-     }
-   }
-   const provider: EmailProvider = new ResendEmailProvider();
-   ```
-5. `npm install resend` (or Postmark's SDK).
-
-This is the one piece of "real" infrastructure the code doesn't already abstract-and-swap automatically, because there was no key available to test against — everything else (AI, Stripe, rate limiting) auto-upgrades from its safe fallback the moment you set the right env var.
+If a send fails (bad key, unverified domain), the campaign returns to Draft with an error on the review page; if only some addresses fail, those recipients are marked FAILED and the rest are delivered.
 
 ---
 
@@ -129,7 +113,9 @@ In your Vercel project settings → Environment Variables, set (Production envir
 | `CRON_SECRET` | Output of `openssl rand -hex 32` |
 | `UPSTASH_REDIS_REST_URL` | from Upstash |
 | `UPSTASH_REDIS_REST_TOKEN` | from Upstash |
-| `EMAIL_PROVIDER_API_KEY` | from Resend/Postmark |
+| `EMAIL_PROVIDER_API_KEY` | Resend API key |
+| `EMAIL_FROM` | `Zendmail <hello@yourdomain.com>` |
+| `EMAIL_VERIFIED_DOMAINS` | `yourdomain.com` |
 | `STRIPE_SECRET_KEY` | from Stripe (see §7) |
 | `STRIPE_WEBHOOK_SECRET` | from Stripe (see §7) |
 | `AI_PROVIDER_API_KEY` | from Anthropic Console |

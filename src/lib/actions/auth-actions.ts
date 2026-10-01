@@ -65,7 +65,12 @@ export async function signUpAction(_prev: ActionState, formData: FormData): Prom
     expiresAt: new Date(Date.now() + VERIFY_TOKEN_TTL_MS),
   });
 
-  await sendVerificationEmail(email, appUrl(`/verify-email?token=${token}`));
+  try {
+    await sendVerificationEmail(email, appUrl(`/verify-email?token=${token}`));
+  } catch (error) {
+    // The account exists already; don't fail signup because mail is down. The user can use "resend" later.
+    console.error("Verification email failed:", error instanceof Error ? error.message : error);
+  }
   await recordAuditLog({ action: "auth.signup", userId: user.id });
   await createSession(user.id);
 
@@ -158,7 +163,12 @@ export async function forgotPasswordAction(
       type: "PASSWORD_RESET",
       expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
     });
-    await sendPasswordResetEmail(email, appUrl(`/reset-password?token=${token}`));
+    try {
+      await sendPasswordResetEmail(email, appUrl(`/reset-password?token=${token}`));
+    } catch (error) {
+      // Same response whether or not mail went out, so this form can't be used to probe accounts.
+      console.error("Password reset email failed:", error instanceof Error ? error.message : error);
+    }
     await recordAuditLog({ action: "auth.password_reset_requested", userId: user.id });
   }
 
@@ -231,7 +241,12 @@ export async function resendVerificationEmailAction(): Promise<ActionState> {
     expiresAt: new Date(Date.now() + VERIFY_TOKEN_TTL_MS),
   });
 
-  await sendVerificationEmail(user.email, appUrl(`/verify-email?token=${token}`));
+  try {
+    await sendVerificationEmail(user.email, appUrl(`/verify-email?token=${token}`));
+  } catch (error) {
+    console.error("Verification email failed:", error instanceof Error ? error.message : error);
+    return { error: "We couldn't send the email right now. Please try again in a few minutes." };
+  }
   await recordAuditLog({ action: "auth.verification_email_resent", userId: user.id });
 
   return { success: "We've sent a new verification link to your email." };
