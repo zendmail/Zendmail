@@ -1,12 +1,12 @@
 import "server-only";
 import { and, eq, desc, sql, lte, gte } from "drizzle-orm";
 import { db } from "@/db/client";
-import { campaigns, campaignRecipients, contacts, suppressionEntries, segments, segmentRules, sendingDomains, workspaces, type EmailBlock } from "@/db/schema";
+import { campaigns, campaignRecipients, contacts, suppressionEntries, segments, segmentRules, workspaces, type EmailBlock } from "@/db/schema";
 import { buildSegmentCondition, type RuleInput } from "./segments";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
 import { appUrl } from "./app-url";
-import { collectSendabilityErrors, extractDomain } from "./sending-domains";
+import { runPreSendChecks, PreSendBlockedError } from "./sending/presend";
 
 export async function listCampaigns(workspaceId: string) {
   return db
@@ -156,37 +156,13 @@ export async function countSendableAudience(
  * and the scheduled-send cron route (time-triggered) — both must send
  * through this single code path so delivery behaves identically either way.
  */
-export async function dispatchCampaign(workspaceId: string, campaignId: string) {
-  const [campaignRow] = await db
-    .select()
-    .from(campaigns)
-    .where(and(eq(campaigns.id, campaignId), eq(campaigns.workspaceId, workspaceId)))
-    .limit(1);
-
-  if (!campaignRow) {
-    throw new Error("Campaign not found.");
-  }
-
-  const domain = extractDomain(campaignRow.fromEmail);
-  const [sendingDomain] = domain
-    ? await db
-        .select()
-        .from(sendingDomains)
-        .where(and(eq(sendingDomains.workspaceId, workspaceId), eq(sendingDomains.domain, domain)))
-        .limit(1)
-    : [null];
-
-  const sendabilityErrors = collectSendabilityErrors({
-    fromEmail: campaignRow.fromEmail,
-    replyTo: campaignRow.replyTo ?? undefined,
-    status: sendingDomain?.status,
-    domainVerified: Boolean(sendingDomain && sendingDomain.status === "VERIFIED"),
-    workspaceVerifiedDomain: Boolean(sendingDomain && sendingDomain.workspaceId === workspaceId && sendingDomain.status === "VERIFIED"),
-    customMailFromConfigured: Boolean(sendingDomain?.mailFrom),
-  });
-
-  if (sendabilityErrors.length > 0) {
-    throw new Error(sendabilityErrors[0]);
+export async function dispatchCampaign(workspaceId: string, campaignId: string, actingUserId?: string) {
+  // Pre-send gate: runs BEFORE the campaign is claimed, so a blocked send leaves it untouched
+  // (still DRAFT/SCHEDULED) instead of stranding it in SENDING.
+  const existing = await getCampaignById(workspaceId, campaignId);
+  if (existing && (existing.status === "DRAFT" || existing.status === "SCHEDULED")) {
+    const report = await runPreSendChecks(workspaceId, existing, actingUserId);
+    if (!report.canSend) throw new PreSendBlockedError(report);
   }
 
   // Atomically claim the campaign before doing any sending — this is the
@@ -225,9 +201,12 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string) 
 
     try {
       await sendCampaignEmail({
+        workspaceId,
+        source: "CAMPAIGN",
         to: contact.email,
         fromName: campaign.fromName,
         fromEmail: campaign.fromEmail,
+        replyTo: campaign.replyTo,
         subject: campaign.subject,
         html,
         text,

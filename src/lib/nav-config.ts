@@ -22,6 +22,8 @@ import {
   UsersRound,
   CreditCard,
   Settings,
+  Globe,
+  HeartPulse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -84,6 +86,8 @@ export const navGroups: NavGroup[] = [
       { label: "Team", href: "/workspace/team", icon: UsersRound },
       { label: "Billing", href: "/workspace/billing", icon: CreditCard },
       { label: "Settings", href: "/workspace/settings", icon: Settings },
+      { label: "Sending Domains", href: "/workspace/sending-domains", icon: Globe },
+      { label: "Sending Health", href: "/workspace/sending-health", icon: HeartPulse },
     ],
   },
 ];

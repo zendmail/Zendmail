@@ -12,7 +12,6 @@ import {
 import { workspaces } from "./workspace";
 import { segments } from "./segments";
 import { contacts } from "./contacts";
-import { sendingIdentities } from "./sending";
 
 // A single content block within an email. Kept as a JSON shape rather
 // than a normalized `email_blocks` table for the MVP builder — blocks
@@ -87,7 +86,6 @@ export const campaigns = pgTable(
     fromName: text("from_name").notNull(),
     fromEmail: text("from_email").notNull(),
     replyTo: text("reply_to"),
-    sendingIdentityId: uuid("sending_identity_id").references(() => sendingIdentities.id, { onDelete: "set null" }),
     subject: text("subject").notNull().default(""),
     previewText: text("preview_text"),
 

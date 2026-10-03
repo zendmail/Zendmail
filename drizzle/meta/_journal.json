@@ -78,6 +78,13 @@
       "when": 1790548299908,
       "tag": "0010_sync_range_start",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790888430080,
+      "tag": "0011_sending_domains",
+      "breakpoints": true
     }
   ]
 }

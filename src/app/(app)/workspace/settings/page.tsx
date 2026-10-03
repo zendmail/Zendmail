@@ -7,9 +7,8 @@ import { FrequencyGuardForm } from "@/components/workspace/frequency-guard-form"
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { db } from "@/db/client";
-import { workspaces, contacts, sendingDomains, sendingIdentities } from "@/db/schema";
+import { workspaces, contacts } from "@/db/schema";
 import { formatNumber } from "@/lib/utils";
-import { SendingDomainsSection } from "@/components/workspace/sending-domains-section";
 
 export default async function WorkspaceSettingsPage() {
   const user = await getCurrentUser();
@@ -28,18 +27,6 @@ export default async function WorkspaceSettingsPage() {
     .select({ count: sql<number>`count(*)::int` })
     .from(contacts)
     .where(and(eq(contacts.workspaceId, activeWorkspace.id), sql`${contacts.maxEmailsPerWeek} is not null`));
-
-  const domains = await db
-    .select()
-    .from(sendingDomains)
-    .where(eq(sendingDomains.workspaceId, activeWorkspace.id))
-    .orderBy(sendingDomains.createdAt);
-
-  const identities = await db
-    .select()
-    .from(sendingIdentities)
-    .where(eq(sendingIdentities.workspaceId, activeWorkspace.id))
-    .orderBy(sendingIdentities.createdAt);
 
   return (
     <div className="mx-auto max-w-[720px] space-y-6">
@@ -63,18 +50,6 @@ export default async function WorkspaceSettingsPage() {
               timezone: workspace.timezone,
             }}
           />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>Sending domains</CardTitle>
-            <CardDescription>Add and verify your business domain before using it for outbound email.</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <SendingDomainsSection domains={domains} identities={identities} />
         </CardContent>
       </Card>
 

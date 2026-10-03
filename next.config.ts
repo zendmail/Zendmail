@@ -33,10 +33,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Standalone output produces a minimal, self-contained server bundle —
-  // the right shape for a container/serverless deploy rather than needing
-  // the full node_modules tree on the production host.
-  output: "standalone",
+  
 
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

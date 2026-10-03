@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 
 export function ContentDetailsForm({
   campaign,
+  verifiedSenders = [],
 }: {
+  /** Verified sending identities in this workspace, offered as From-address suggestions. */
+  verifiedSenders?: { fromEmail: string; fromName: string }[];
   campaign: {
     id: string;
     name: string;
@@ -39,7 +42,14 @@ export function ContentDetailsForm({
           <Input id="fromName" name="fromName" defaultValue={campaign.fromName} required />
         </Field>
         <Field label="From email" htmlFor="fromEmail">
-          <Input id="fromEmail" name="fromEmail" type="email" defaultValue={campaign.fromEmail} required />
+          <Input id="fromEmail" name="fromEmail" type="email" list="verified-senders" defaultValue={campaign.fromEmail} required />
+          <datalist id="verified-senders">
+            {verifiedSenders.map((s) => (
+              <option key={s.fromEmail} value={s.fromEmail}>
+                {s.fromName}
+              </option>
+            ))}
+          </datalist>
         </Field>
       </div>
 
