@@ -10,6 +10,8 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { getCampaignById, countSendableAudience } from "@/lib/campaigns";
 import { getSendTimeInsight } from "@/lib/send-time-insight";
+import { runPreSendChecks } from "@/lib/sending/presend";
+import { PreSendChecklist } from "@/components/sending/presend-checklist";
 import { sendCampaignNowAction } from "@/lib/actions/campaign-actions";
 import { formatNumber } from "@/lib/utils";
 import type { EmailBlock } from "@/db/schema";
@@ -23,7 +25,7 @@ export default async function CampaignReviewPage({
 }) {
   const { id } = await params;
   const { sendError } = await searchParams;
-  const sendErrorMessage = typeof sendError === "string" ? sendError.slice(0, 300) : null;
+  const sendErrorMessage = typeof sendError === "string" ? sendError.slice(0, 700) : null;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const workspace = await getActiveWorkspaceForUser(user.id);
@@ -39,6 +41,7 @@ export default async function CampaignReviewPage({
     }),
     getSendTimeInsight(workspace.id),
   ]);
+  const preSend = await runPreSendChecks(workspace.id, campaign, user.id);
   const sendableCount = audience.sendable.length;
   const totalSkipped = audience.skippedFrequencyCap + audience.skippedPaused;
 
@@ -115,6 +118,8 @@ export default async function CampaignReviewPage({
               </p>
             </Card>
           )}
+
+          <PreSendChecklist report={preSend} />
 
           <Card>
             <CardHeader>

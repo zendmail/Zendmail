@@ -11,9 +11,7 @@ import { recordAuditLog } from "@/lib/audit";
 import { audienceSchema, contentSchema, testEmailSchema, scheduleSchema } from "@/lib/validation/campaigns";
 import { dispatchCampaign } from "@/lib/campaigns";
 import { renderBlocksToHtml, renderBlocksToText, createDefaultBlock } from "@/lib/email-blocks";
-import { sendCampaignEmail } from "@/lib/email";
-import { collectSendabilityErrors, extractDomain } from "@/lib/sending-domains";
-import { sendingDomains } from "@/db/schema";
+import { sendCampaignEmail, SenderNotAuthorizedError } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth-actions";
 
 async function requireWorkspace() {
@@ -242,34 +240,20 @@ export async function sendTestEmailAction(_prev: TestEmailState, formData: FormD
   }
 
   const blocks = campaign.blocks as EmailBlock[];
-  const domain = extractDomain(campaign.fromEmail);
-  const [sendingDomain] = domain
-    ? await db.select().from(sendingDomains).where(and(eq(sendingDomains.workspaceId, workspace.id), eq(sendingDomains.domain, domain))).limit(1)
-    : [null];
-
-  const sendabilityErrors = collectSendabilityErrors({
-    fromEmail: campaign.fromEmail,
-    replyTo: campaign.replyTo ?? undefined,
-    status: sendingDomain?.status,
-    domainVerified: Boolean(sendingDomain && sendingDomain.status === "VERIFIED"),
-    workspaceVerifiedDomain: Boolean(sendingDomain && sendingDomain.workspaceId === workspace.id && sendingDomain.status === "VERIFIED"),
-    customMailFromConfigured: Boolean(sendingDomain?.mailFrom),
-  });
-
-  if (sendabilityErrors.length > 0) {
-    return { error: sendabilityErrors[0] };
-  }
-
   try {
     await sendCampaignEmail({
+      workspaceId: workspace.id,
+      source: "TEST",
       to: parsed.data.email,
       fromName: campaign.fromName,
       fromEmail: campaign.fromEmail,
+      replyTo: campaign.replyTo,
       subject: `[TEST] ${campaign.subject}`,
       html: renderBlocksToHtml(blocks),
       text: renderBlocksToText(blocks),
     });
   } catch (error) {
+    if (error instanceof SenderNotAuthorizedError) return { error: `${error.message} ${error.resolution}` };
     console.error("Test email failed:", error instanceof Error ? error.message : error);
     return { error: "The test email couldn't be sent. Check your email provider settings and try again." };
   }
@@ -284,7 +268,7 @@ export async function sendCampaignNowAction(formData: FormData) {
 
   let count: number;
   try {
-    count = await dispatchCampaign(workspace.id, campaignId);
+    count = await dispatchCampaign(workspace.id, campaignId, userId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "The campaign couldn't be sent.";
     redirect(`/campaigns/${campaignId}/review?sendError=${encodeURIComponent(message)}`);

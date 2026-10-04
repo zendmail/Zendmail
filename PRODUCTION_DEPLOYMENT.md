@@ -115,7 +115,8 @@ In your Vercel project settings → Environment Variables, set (Production envir
 | `UPSTASH_REDIS_REST_TOKEN` | from Upstash |
 | `EMAIL_PROVIDER_API_KEY` | Resend API key |
 | `EMAIL_FROM` | `Zendmail <hello@yourdomain.com>` |
-| `EMAIL_VERIFIED_DOMAINS` | `yourdomain.com` |
+| `EMAIL_VERIFIED_DOMAINS` | Platform-owned domains only (see `.env.example`) |
+| `RESEND_WEBHOOK_SECRET` | Resend webhook signing secret; webhook URL `/api/webhooks/resend` (events: delivered, bounced, complained) |
 | `STRIPE_SECRET_KEY` | from Stripe (see §7) |
 | `STRIPE_WEBHOOK_SECRET` | from Stripe (see §7) |
 | `AI_PROVIDER_API_KEY` | from Anthropic Console |
