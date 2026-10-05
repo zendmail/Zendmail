@@ -19,7 +19,7 @@ function TemplatesHeader() {
           <p className="mt-1 text-[14px] leading-[1.5] text-text-secondary">A strong first impression starts with the right design.</p>
         </div>
       </div>
-      <Link href="/templates/create" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-primary px-4 text-[13px] font-semibold text-primary-text-on shadow-[var(--shadow-xs)] transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+      <Link href="/templates/new" className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-primary px-4 text-[13px] font-semibold text-primary-text-on shadow-[var(--shadow-xs)] transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
         <Plus size={16} /> Create template
       </Link>
     </header>
@@ -100,7 +100,7 @@ function TemplateInspector({ template }: { template?: Template }) {
       <div className="rounded-[8px] bg-[#10254A] p-4 text-center text-white">
         <p className="text-[15px] font-semibold">Create. Send. Grow.</p>
         <p className="mt-1 text-[13px] leading-[1.5] text-slate-300">Turn your next idea into a campaign.</p>
-        <Link href="/templates/create" className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-[6px] bg-white px-3 text-[13px] font-semibold text-[#10254A] transition-colors hover:bg-slate-100">
+        <Link href="/templates/new" className="mt-3 inline-flex h-9 items-center justify-center gap-1.5 rounded-[6px] bg-white px-3 text-[13px] font-semibold text-[#10254A] transition-colors hover:bg-slate-100">
           <Plus size={14} /> Create template
         </Link>
       </div>
@@ -194,8 +194,8 @@ export function TemplatesLibrary({ templates }: { templates: Template[] }) {
             <TemplatePreview template={openTemplate} size="large" />
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className="text-[12px] text-text-secondary">{openTemplate.blocks.length} content blocks</p>
-              <Link href="/templates/create" className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] bg-white px-3 text-[13px] font-semibold text-[#10254A] transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
-                <Plus size={14} /> Create template
+              <Link href={`/templates/${openTemplate.id}/edit`} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[6px] bg-white px-3 text-[13px] font-semibold text-[#10254A] transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80">
+                <Plus size={14} /> Edit template
               </Link>
             </div>
           </div>
