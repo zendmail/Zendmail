@@ -361,8 +361,9 @@ nav {
 /* ---------------------------------------------------------
    Navy sidebar
    --------------------------------------------------------- */
+/* NOTE: do not set `position` here — the sidebar is `fixed` on phones and `sticky` on desktop via
+   Tailwind classes in sidebar.tsx, and unlayered CSS here would override them. */
 .app-sidebar {
-  position: relative;
   isolation: isolate;
   overflow: hidden;
   background: linear-gradient(180deg, #0B2C61 0%, #0A2757 38%, #08214D 70%, #0A2453 100%);

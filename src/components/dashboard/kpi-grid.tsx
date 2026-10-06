@@ -58,7 +58,7 @@ export function KpiGrid({
       {kpis.map((kpi, index) => (
         <Card
           key={kpi.label}
-          className="dashboard-card dashboard-reveal min-w-0 p-4"
+          className={`dashboard-card dashboard-reveal min-w-0 p-4 ${index === kpis.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
           style={{ animationDelay: `${index * 70}ms` }}
         >
           <div className="flex items-center gap-2.5">

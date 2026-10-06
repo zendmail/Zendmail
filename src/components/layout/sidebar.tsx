@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsUpDown, X } from "lucide-react";
@@ -35,6 +36,19 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
 
+  // Lock page scroll behind the open mobile drawer and close it on Escape.
+  React.useEffect(() => {
+    if (!mobileOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose?.();
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen, onClose]);
+
   return (
     <>
       {mobileOpen && (
@@ -46,7 +60,7 @@ export function Sidebar({
       )}
       <aside
         className={cn(
-          "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[240px] shrink-0 flex-col transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
+          "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[min(288px,86vw)] shrink-0 flex-col lg:w-[240px] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

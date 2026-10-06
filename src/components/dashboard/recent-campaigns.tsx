@@ -70,7 +70,40 @@ export function RecentCampaigns({ campaigns }: { campaigns: Campaign[] }) {
           </form>
         </div>
       ) : (
-        <div className="mt-3">
+        <>
+        {/* Phones: compact cards (a 6-column table doesn't fit a 390px screen) */}
+        <ul className="mt-3 divide-y divide-border md:hidden">
+          {campaigns.map((c) => {
+            const href = c.status === "DRAFT" ? `/campaigns/${c.id}/audience` : `/campaigns/${c.id}`;
+            const date = c.sentAt ?? c.scheduledAt ?? c.createdAt;
+            const sent = c.status === "SENT" && c.delivered > 0;
+            return (
+              <li key={c.id}>
+                <Link href={href} className="flex items-center gap-3 py-3">
+                  <CampaignThumb id={c.id} />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="truncate text-[14px] font-semibold text-text-primary">{c.name}</span>
+                      <CampaignStatusBadge status={c.status} />
+                    </span>
+                    <span className="mt-0.5 block truncate text-[12px] text-text-secondary">
+                      {c.typeLabel} · {dateFormat.format(new Date(date))}
+                    </span>
+                    {sent && (
+                      <span className="mt-1 block text-[12px] text-text-secondary">
+                        {formatNumber(c.recipientCount)} recipients
+                        {c.openRate !== null && <> · {formatPercent(c.openRate)} opened</>}
+                        {c.clickRate !== null && <> · {formatPercent(c.clickRate)} clicked</>}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="mt-3 hidden overflow-x-auto md:block">
           <Table className="min-w-[720px]">
             <TableHead>
               <TableRow className="hover:bg-transparent">
@@ -120,6 +153,7 @@ export function RecentCampaigns({ campaigns }: { campaigns: Campaign[] }) {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
     </Card>
   );

@@ -39,12 +39,12 @@ export function WelcomeHero({
   return (
     <section className="dashboard-hero dashboard-reveal">
       <div className="relative z-10 px-6 py-5 lg:max-w-[74%] lg:py-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-[0.1em] text-text-primary">
               Welcome back <span aria-hidden="true" className="text-[14px]">👋</span>
             </p>
-            <h1 className="mt-2 text-[28px] font-extrabold leading-[1.15] tracking-[-0.025em] text-text-primary">
+            <h1 className="mt-2 text-[26px] font-extrabold leading-[1.15] sm:text-[28px] tracking-[-0.025em] text-text-primary">
               {greeting}, <span className="text-primary">{firstName}</span>
             </h1>
             <p className="mt-2 text-[14px] leading-[1.5] text-text-secondary">
@@ -52,13 +52,13 @@ export function WelcomeHero({
             </p>
           </div>
           <form action={createDraftCampaignAction} className="shrink-0">
-            <Button type="submit" className="h-10 rounded-[10px] px-5 text-[13px] font-semibold shadow-[0_8px_18px_-6px_rgb(11_95_255/0.6)]">
+            <Button type="submit" className="h-11 w-full rounded-[10px] px-5 text-[13px] font-semibold shadow-[0_8px_18px_-6px_rgb(11_95_255/0.6)] sm:h-10 sm:w-auto">
               <Plus size={16} strokeWidth={2.4} /> Create campaign
             </Button>
           </form>
         </div>
 
-        <dl className="mt-5 flex flex-wrap gap-x-5 gap-y-4">
+        <dl className="mt-5 grid grid-cols-2 gap-x-3 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-5">
           {stats.map((stat, i) => (
             <div
               key={stat.label}

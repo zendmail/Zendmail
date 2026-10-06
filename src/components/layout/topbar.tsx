@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Menu, Search, Bell } from "lucide-react";
+import { Logo } from "@/components/ui/logo";
 import { UserMenu } from "@/components/layout/user-menu";
 
 export function Topbar({
@@ -29,9 +31,16 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-30 flex h-[66px] items-center gap-3 border-b border-border bg-surface/95 px-4 backdrop-blur lg:px-5">
-      <button className="text-text-secondary lg:hidden" onClick={onMenuClick} aria-label="Open menu">
-        <Menu size={20} />
+      <button
+        className="-ml-1 flex h-10 w-10 items-center justify-center rounded-[10px] text-text-secondary hover:bg-surface-secondary lg:hidden"
+        onClick={onMenuClick}
+        aria-label="Open menu"
+      >
+        <Menu size={22} />
       </button>
+      <Link href="/dashboard" aria-label="Zendmail dashboard" className="lg:hidden">
+        <Logo height={22} variant="auto" />
+      </Link>
 
       <label className="hidden h-[42px] w-[min(463px,42vw)] items-center gap-2.5 rounded-[12px] border border-border bg-surface-secondary/70 px-3.5 text-text-tertiary focus-within:border-primary/40 focus-within:bg-surface lg:flex">
         <Search size={16} />
@@ -46,7 +55,14 @@ export function Topbar({
         </kbd>
       </label>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        <button
+          className="flex h-10 w-10 items-center justify-center rounded-[10px] text-text-secondary hover:bg-surface-secondary lg:hidden"
+          aria-label="Search"
+          onClick={() => searchRef.current?.focus()}
+        >
+          <Search size={19} strokeWidth={1.9} />
+        </button>
         <button
           className="relative flex h-10 w-10 items-center justify-center rounded-[10px] text-text-secondary hover:bg-surface-secondary"
           aria-label="Notifications"

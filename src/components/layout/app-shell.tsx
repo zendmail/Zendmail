@@ -28,7 +28,7 @@ export function AppShell({
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenuClick={() => setMobileOpen(true)} userName={userName} planName={planName} />
-        <main className="flex-1 px-4 py-6 lg:px-5 lg:py-5">
+        <main className="min-w-0 flex-1 px-3.5 py-4 sm:px-4 sm:py-6 lg:px-5 lg:py-5">
           <RouteTransition>{children}</RouteTransition>
         </main>
       </div>

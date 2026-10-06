@@ -43,7 +43,7 @@ export function CampaignPerformance({
 }) {
   return (
     <Card className="dashboard-card p-5">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="flex items-start gap-3">
           <ChartColumn size={24} className="mt-0.5 text-primary" strokeWidth={2.2} />
           <div>
