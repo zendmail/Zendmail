@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { ShieldAlert, Clock3, Gauge } from "lucide-react";
-import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CampaignWizardSteps } from "@/components/campaigns/campaign-wizard-steps";
 import { EmailPreview } from "@/components/campaigns/email-preview";
@@ -11,9 +10,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { getCampaignById, countSendableAudience } from "@/lib/campaigns";
 import { getSendTimeInsight } from "@/lib/send-time-insight";
+import { runPreSendChecks } from "@/lib/sending/presend";
+import { PreSendChecklist } from "@/components/sending/presend-checklist";
 import { sendCampaignNowAction } from "@/lib/actions/campaign-actions";
-import { resolveSender } from "@/lib/email";
-import { getVerifiedDomainNames } from "@/lib/sending-domains/service";
 import { formatNumber } from "@/lib/utils";
 import type { EmailBlock } from "@/db/schema";
 
@@ -26,7 +25,7 @@ export default async function CampaignReviewPage({
 }) {
   const { id } = await params;
   const { sendError } = await searchParams;
-  const sendErrorMessage = typeof sendError === "string" ? sendError.slice(0, 300) : null;
+  const sendErrorMessage = typeof sendError === "string" ? sendError.slice(0, 700) : null;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const workspace = await getActiveWorkspaceForUser(user.id);
@@ -42,15 +41,9 @@ export default async function CampaignReviewPage({
     }),
     getSendTimeInsight(workspace.id),
   ]);
+  const preSend = await runPreSendChecks(workspace.id, campaign, user.id);
   const sendableCount = audience.sendable.length;
   const totalSkipped = audience.skippedFrequencyCap + audience.skippedPaused;
-
-  const sender = resolveSender({
-    fromName: campaign.fromName,
-    fromEmail: campaign.fromEmail,
-    replyTo: campaign.replyTo,
-    verifiedDomains: await getVerifiedDomainNames(workspace.id),
-  });
 
   const blocks = campaign.blocks as EmailBlock[];
   const isDraft = campaign.status === "DRAFT";
@@ -76,17 +69,6 @@ export default async function CampaignReviewPage({
                   {campaign.fromName} &lt;{campaign.fromEmail}&gt;
                 </span>
               </div>
-              <div className="flex justify-between gap-4">
-                <span className="shrink-0 text-text-secondary">Recipients see</span>
-                <span className="break-all text-right font-medium text-text-primary">{sender.from}</span>
-              </div>
-              {sender.mode === "shared" && (
-                <p className="rounded-[10px] bg-warning-surface px-3 py-2 text-[12px] leading-[1.5] text-warning">
-                  This address isn&apos;t on a verified domain, so the email goes out from Zendmail&apos;s shared address
-                  {sender.replyTo ? <> and replies go to <strong>{sender.replyTo}</strong></> : null}.{" "}
-                  <Link href="/workspace/domains" className="font-semibold underline">Verify your domain</Link> to send from your own address.
-                </p>
-              )}
               <div className="flex justify-between">
                 <span className="text-text-secondary">Subject</span>
                 <span className="font-medium text-text-primary">{campaign.subject || "—"}</span>
@@ -136,6 +118,8 @@ export default async function CampaignReviewPage({
               </p>
             </Card>
           )}
+
+          <PreSendChecklist report={preSend} />
 
           <Card>
             <CardHeader>

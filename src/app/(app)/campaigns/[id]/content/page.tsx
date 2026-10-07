@@ -10,7 +10,8 @@ import { EmailPreview } from "@/components/campaigns/email-preview";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { getCampaignById } from "@/lib/campaigns";
-import { getVerifiedDomainNames } from "@/lib/sending-domains/service";
+import { listSenderCandidates } from "@/lib/sending/domains";
+import { isDomainSendable } from "@/lib/sending/rules";
 import { db } from "@/db/client";
 import { emailTemplates, type EmailBlock } from "@/db/schema";
 import { eq, isNull, or } from "drizzle-orm";
@@ -22,6 +23,7 @@ export default async function CampaignContentPage({ params }: { params: Promise<
   const workspace = await getActiveWorkspaceForUser(user.id);
   if (!workspace) redirect("/onboarding/create");
 
+  const verifiedSenders = (await listSenderCandidates(workspace.id)).filter((c) => isDomainSendable(c.domain));
   const campaign = await getCampaignById(workspace.id, id);
   if (!campaign) notFound();
 
@@ -62,7 +64,7 @@ export default async function CampaignContentPage({ params }: { params: Promise<
               <CardTitle>Campaign details</CardTitle>
             </CardHeader>
             <CardContent>
-              <ContentDetailsForm campaign={campaign} verifiedDomains={await getVerifiedDomainNames(workspace.id)} />
+              <ContentDetailsForm campaign={campaign} verifiedSenders={verifiedSenders} />
             </CardContent>
           </Card>
 

@@ -11,8 +11,7 @@ import { recordAuditLog } from "@/lib/audit";
 import { audienceSchema, contentSchema, testEmailSchema, scheduleSchema } from "@/lib/validation/campaigns";
 import { dispatchCampaign } from "@/lib/campaigns";
 import { renderBlocksToHtml, renderBlocksToText, createDefaultBlock } from "@/lib/email-blocks";
-import { sendCampaignEmail } from "@/lib/email";
-import { getVerifiedDomainNames } from "@/lib/sending-domains/service";
+import { sendCampaignEmail, SenderNotAuthorizedError } from "@/lib/email";
 import type { ActionState } from "@/lib/actions/auth-actions";
 
 async function requireWorkspace() {
@@ -20,7 +19,7 @@ async function requireWorkspace() {
   if (!user) redirect("/login");
   const workspace = await getActiveWorkspaceForUser(user.id);
   if (!workspace) redirect("/onboarding/create");
-  return { userId: user.id, userEmail: user.email, workspace };
+  return { userId: user.id, workspace };
 }
 
 async function requireDraftCampaign(workspaceId: string, campaignId: string) {
@@ -35,12 +34,7 @@ async function requireDraftCampaign(workspaceId: string, campaignId: string) {
 
 /** Creates a blank draft campaign and sends the user straight into the audience step. */
 export async function createDraftCampaignAction() {
-  const { userId, userEmail, workspace } = await requireWorkspace();
-
-  // Default sender: an address on the workspace's verified domain if there is one; otherwise the
-  // owner's own email, so replies to a campaign actually reach a real inbox.
-  const [verifiedDomain] = await getVerifiedDomainNames(workspace.id);
-  const defaultFromEmail = verifiedDomain ? `hello@${verifiedDomain}` : userEmail;
+  const { userId, workspace } = await requireWorkspace();
 
   const [campaign] = await db
     .insert(campaigns)
@@ -48,7 +42,7 @@ export async function createDraftCampaignAction() {
       workspaceId: workspace.id,
       name: "Untitled campaign",
       fromName: workspace.name,
-      fromEmail: defaultFromEmail,
+      fromEmail: `hello@${workspace.slug}.zendmail.demo`,
       subject: "",
     })
     .returning();
@@ -248,16 +242,18 @@ export async function sendTestEmailAction(_prev: TestEmailState, formData: FormD
   const blocks = campaign.blocks as EmailBlock[];
   try {
     await sendCampaignEmail({
+      workspaceId: workspace.id,
+      source: "TEST",
       to: parsed.data.email,
       fromName: campaign.fromName,
       fromEmail: campaign.fromEmail,
       replyTo: campaign.replyTo,
-      verifiedDomains: await getVerifiedDomainNames(workspace.id),
       subject: `[TEST] ${campaign.subject}`,
       html: renderBlocksToHtml(blocks),
       text: renderBlocksToText(blocks),
     });
   } catch (error) {
+    if (error instanceof SenderNotAuthorizedError) return { error: `${error.message} ${error.resolution}` };
     console.error("Test email failed:", error instanceof Error ? error.message : error);
     return { error: "The test email couldn't be sent. Check your email provider settings and try again." };
   }
@@ -272,7 +268,7 @@ export async function sendCampaignNowAction(formData: FormData) {
 
   let count: number;
   try {
-    count = await dispatchCampaign(workspace.id, campaignId);
+    count = await dispatchCampaign(workspace.id, campaignId, userId);
   } catch (error) {
     const message = error instanceof Error ? error.message : "The campaign couldn't be sent.";
     redirect(`/campaigns/${campaignId}/review?sendError=${encodeURIComponent(message)}`);

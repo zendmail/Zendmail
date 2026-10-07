@@ -95,14 +95,6 @@ The code auto-detects these and switches from in-memory to distributed rate limi
    - `EMAIL_VERIFIED_DOMAINS` = `yourdomain.com` (comma-separated). Campaigns whose "From" address is on one of these domains send as-is. Any other From address (for example a Gmail address) is sent from `EMAIL_FROM` instead, with Reply-To set to the workspace's address, so mail is never rejected for an unverified domain.
 4. Restart the app. Use **Send test email** on a campaign's review step to confirm delivery.
 
-### Letting customers send from their own domain
-
-Each workspace can verify its own domain at **Workspace → Sending domains** (owner/admin only). Zendmail registers the domain with Resend, shows the SPF/DKIM DNS records to add, and once verified, campaigns can use `anyone@theirdomain.com` as the From address. Without a verified domain, mail is sent from `EMAIL_FROM` with the workspace's display name and Reply-To set to their address.
-
-- Managing domains needs a **full-access** Resend API key. Set it as `EMAIL_DOMAINS_API_KEY` (keep `EMAIL_PROVIDER_API_KEY` as a sending-only key). If `EMAIL_DOMAINS_API_KEY` is not set, `EMAIL_PROVIDER_API_KEY` is used.
-- Resend's free plan allows 1 verified domain in total across your whole account; paid plans allow more. Check your plan's domain limit before onboarding many customers, or move campaign sending to Amazon SES.
-- Run `npm run db:migrate` after deploying this update (adds the `sending_domains` table).
-
 If a send fails (bad key, unverified domain), the campaign returns to Draft with an error on the review page; if only some addresses fail, those recipients are marked FAILED and the rest are delivered.
 
 ---
@@ -123,7 +115,8 @@ In your Vercel project settings → Environment Variables, set (Production envir
 | `UPSTASH_REDIS_REST_TOKEN` | from Upstash |
 | `EMAIL_PROVIDER_API_KEY` | Resend API key |
 | `EMAIL_FROM` | `Zendmail <hello@yourdomain.com>` |
-| `EMAIL_VERIFIED_DOMAINS` | `yourdomain.com` |
+| `EMAIL_VERIFIED_DOMAINS` | Platform-owned domains only (see `.env.example`) |
+| `RESEND_WEBHOOK_SECRET` | Resend webhook signing secret; webhook URL `/api/webhooks/resend` (events: delivered, bounced, complained) |
 | `STRIPE_SECRET_KEY` | from Stripe (see §7) |
 | `STRIPE_WEBHOOK_SECRET` | from Stripe (see §7) |
 | `AI_PROVIDER_API_KEY` | from Anthropic Console |

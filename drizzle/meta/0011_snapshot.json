@@ -1,5 +1,5 @@
 {
-  "id": "f489dc15-bd28-4e04-9341-fb27688b448c",
+  "id": "dea67be9-7ed3-42a7-b4e2-30d1e74cb0d2",
   "prevId": "f18b221e-9259-4ad0-bc35-05b55ce7736e",
   "version": "7",
   "dialect": "postgresql",
@@ -3659,6 +3659,152 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.email_events": {
+      "name": "email_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sent_message_id": {
+          "name": "sent_message_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_event_id": {
+          "name": "provider_event_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "email_event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "permanent": {
+          "name": "permanent",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "email_event_provider_event_unique": {
+          "name": "email_event_provider_event_unique",
+          "columns": [
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_event_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "email_event_workspace_idx": {
+          "name": "email_event_workspace_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "occurred_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "email_events_workspace_id_workspaces_id_fk": {
+          "name": "email_events_workspace_id_workspaces_id_fk",
+          "tableFrom": "email_events",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "email_events_sent_message_id_sent_messages_id_fk": {
+          "name": "email_events_sent_message_id_sent_messages_id_fk",
+          "tableFrom": "email_events",
+          "tableTo": "sent_messages",
+          "columnsFrom": [
+            "sent_message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.sending_domains": {
       "name": "sending_domains",
       "schema": "",
@@ -3686,8 +3832,7 @@
           "name": "provider",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'resend'"
+          "notNull": true
         },
         "provider_domain_id": {
           "name": "provider_domain_id",
@@ -3695,24 +3840,68 @@
           "primaryKey": false,
           "notNull": false
         },
-        "status": {
-          "name": "status",
-          "type": "sending_domain_status",
+        "ownership_token": {
+          "name": "ownership_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ownership_status": {
+          "name": "ownership_status",
+          "type": "auth_check_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'PENDING'"
+          "default": "'NOT_CHECKED'"
         },
-        "records": {
-          "name": "records",
+        "dkim_status": {
+          "name": "dkim_status",
+          "type": "auth_check_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NOT_CHECKED'"
+        },
+        "spf_status": {
+          "name": "spf_status",
+          "type": "auth_check_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NOT_CHECKED'"
+        },
+        "return_path_status": {
+          "name": "return_path_status",
+          "type": "auth_check_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NOT_CHECKED'"
+        },
+        "dmarc_status": {
+          "name": "dmarc_status",
+          "type": "auth_check_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NOT_CHECKED'"
+        },
+        "dmarc_policy": {
+          "name": "dmarc_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dns_records": {
+          "name": "dns_records",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
           "default": "'[]'::jsonb"
         },
-        "status_note": {
-          "name": "status_note",
-          "type": "text",
+        "last_checked_at": {
+          "name": "last_checked_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },
@@ -3722,8 +3911,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "last_checked_at": {
-          "name": "last_checked_at",
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "test_email_sent_at": {
+          "name": "test_email_sent_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
@@ -3744,9 +3939,15 @@
         }
       },
       "indexes": {
-        "sending_domains_domain_key": {
-          "name": "sending_domains_domain_key",
+        "sending_domain_workspace_domain_unique": {
+          "name": "sending_domain_workspace_domain_unique",
           "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "domain",
               "isExpression": false,
@@ -3759,8 +3960,24 @@
           "method": "btree",
           "with": {}
         },
-        "sending_domains_workspace_idx": {
-          "name": "sending_domains_workspace_idx",
+        "sending_domain_verified_owner_unique": {
+          "name": "sending_domain_verified_owner_unique",
+          "columns": [
+            {
+              "expression": "domain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"sending_domains\".\"ownership_status\" = 'PASSING'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sending_domain_workspace_idx": {
+          "name": "sending_domain_workspace_idx",
           "columns": [
             {
               "expression": "workspace_id",
@@ -3787,6 +4004,275 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sending_identities": {
+      "name": "sending_identities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_name": {
+          "name": "from_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_email": {
+          "name": "from_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reply_to": {
+          "name": "reply_to",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_default": {
+          "name": "is_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sending_identity_workspace_email_unique": {
+          "name": "sending_identity_workspace_email_unique",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "from_email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sending_identity_domain_idx": {
+          "name": "sending_identity_domain_idx",
+          "columns": [
+            {
+              "expression": "domain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sending_identities_workspace_id_workspaces_id_fk": {
+          "name": "sending_identities_workspace_id_workspaces_id_fk",
+          "tableFrom": "sending_identities",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sending_identities_domain_id_sending_domains_id_fk": {
+          "name": "sending_identities_domain_id_sending_domains_id_fk",
+          "tableFrom": "sending_identities",
+          "tableTo": "sending_domains",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sent_messages": {
+      "name": "sent_messages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_message_id": {
+          "name": "provider_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "sent_message_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sender_mode": {
+          "name": "sender_mode",
+          "type": "sender_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sending_domain_id": {
+          "name": "sending_domain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_email": {
+          "name": "to_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sent_message_provider_id_unique": {
+          "name": "sent_message_provider_id_unique",
+          "columns": [
+            {
+              "expression": "provider",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "provider_message_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sent_message_workspace_idx": {
+          "name": "sent_message_workspace_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sent_messages_workspace_id_workspaces_id_fk": {
+          "name": "sent_messages_workspace_id_workspaces_id_fk",
+          "tableFrom": "sent_messages",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sent_messages_sending_domain_id_sending_domains_id_fk": {
+          "name": "sent_messages_sending_domain_id_sending_domains_id_fk",
+          "tableFrom": "sent_messages",
+          "tableTo": "sending_domains",
+          "columnsFrom": [
+            "sending_domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -4126,13 +4612,41 @@
         "CHURNED"
       ]
     },
-    "public.sending_domain_status": {
-      "name": "sending_domain_status",
+    "public.auth_check_status": {
+      "name": "auth_check_status",
       "schema": "public",
       "values": [
+        "NOT_CHECKED",
         "PENDING",
-        "VERIFIED",
-        "FAILED"
+        "PASSING",
+        "FAILING"
+      ]
+    },
+    "public.email_event_type": {
+      "name": "email_event_type",
+      "schema": "public",
+      "values": [
+        "DELIVERED",
+        "BOUNCED",
+        "COMPLAINED"
+      ]
+    },
+    "public.sender_mode": {
+      "name": "sender_mode",
+      "schema": "public",
+      "values": [
+        "WORKSPACE_DOMAIN",
+        "ZENDMAIL_MANAGED"
+      ]
+    },
+    "public.sent_message_source": {
+      "name": "sent_message_source",
+      "schema": "public",
+      "values": [
+        "CAMPAIGN",
+        "AUTOMATION",
+        "TEST",
+        "DOMAIN_TEST"
       ]
     }
   },
