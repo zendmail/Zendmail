@@ -6,7 +6,7 @@ import { buildSegmentCondition, type RuleInput } from "./segments";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
 import { appUrl } from "./app-url";
-import { runPreSendChecks, PreSendBlockedError } from "./sending/presend";
+import { getVerifiedDomainNames } from "./sending-domains/service";
 
 export async function listCampaigns(workspaceId: string) {
   return db
@@ -156,15 +156,7 @@ export async function countSendableAudience(
  * and the scheduled-send cron route (time-triggered) — both must send
  * through this single code path so delivery behaves identically either way.
  */
-export async function dispatchCampaign(workspaceId: string, campaignId: string, actingUserId?: string) {
-  // Pre-send gate: runs BEFORE the campaign is claimed, so a blocked send leaves it untouched
-  // (still DRAFT/SCHEDULED) instead of stranding it in SENDING.
-  const existing = await getCampaignById(workspaceId, campaignId);
-  if (existing && (existing.status === "DRAFT" || existing.status === "SCHEDULED")) {
-    const report = await runPreSendChecks(workspaceId, existing, actingUserId);
-    if (!report.canSend) throw new PreSendBlockedError(report);
-  }
-
+export async function dispatchCampaign(workspaceId: string, campaignId: string) {
   // Atomically claim the campaign before doing any sending — this is the
   // guard against double-sends if a cron sweep overlaps a manual "Send
   // now" click, or two cron invocations overlap under retry/backoff.
@@ -188,6 +180,7 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
 
   const blocks = campaign.blocks as EmailBlock[];
 
+  const verifiedDomains = await getVerifiedDomainNames(workspaceId);
   let failed = 0;
   for (const contact of audience) {
     const [recipient] = await db
@@ -201,12 +194,11 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
 
     try {
       await sendCampaignEmail({
-        workspaceId,
-        source: "CAMPAIGN",
         to: contact.email,
         fromName: campaign.fromName,
         fromEmail: campaign.fromEmail,
         replyTo: campaign.replyTo,
+        verifiedDomains,
         subject: campaign.subject,
         html,
         text,

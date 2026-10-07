@@ -78,7 +78,7 @@ export default async function CampaignReviewPage({
               </div>
               <div className="flex justify-between gap-4">
                 <span className="shrink-0 text-text-secondary">Recipients see</span>
-                <span className="min-w-0 text-right font-medium text-text-primary [overflow-wrap:anywhere]">{sender.from}</span>
+                <span className="break-all text-right font-medium text-text-primary">{sender.from}</span>
               </div>
               {sender.mode === "shared" && (
                 <p className="rounded-[10px] bg-warning-surface px-3 py-2 text-[12px] leading-[1.5] text-warning">

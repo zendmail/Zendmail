@@ -40,14 +40,12 @@ export default async function SendingDomainsPage() {
 
       <div className="grid gap-3 sm:grid-cols-3">
         {benefits.map((b) => (
-          <div key={b.title} className="flex items-start gap-3 rounded-[14px] border border-border bg-surface p-4 sm:block">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-surface text-primary">
+          <div key={b.title} className="rounded-[14px] border border-border bg-surface p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-surface text-primary">
               <b.icon size={17} />
             </span>
-            <div>
-              <p className="text-[13.5px] font-bold text-text-primary sm:mt-3">{b.title}</p>
-              <p className="mt-1 text-[12.5px] leading-[1.5] text-text-secondary">{b.text}</p>
-            </div>
+            <p className="mt-3 text-[13.5px] font-bold text-text-primary">{b.title}</p>
+            <p className="mt-1 text-[12.5px] leading-[1.5] text-text-secondary">{b.text}</p>
           </div>
         ))}
       </div>

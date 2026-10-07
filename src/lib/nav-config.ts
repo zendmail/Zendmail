@@ -23,7 +23,6 @@ import {
   CreditCard,
   Settings,
   Globe,
-  HeartPulse,
   type LucideIcon,
 } from "lucide-react";
 
@@ -83,11 +82,10 @@ export const navGroups: NavGroup[] = [
     label: "Workspace",
     items: [
       { label: "Integrations", href: "/integrations", icon: Plug },
+      { label: "Sending domains", href: "/workspace/domains", icon: Globe },
       { label: "Team", href: "/workspace/team", icon: UsersRound },
       { label: "Billing", href: "/workspace/billing", icon: CreditCard },
       { label: "Settings", href: "/workspace/settings", icon: Settings },
-      { label: "Sending Domains", href: "/workspace/sending-domains", icon: Globe },
-      { label: "Sending Health", href: "/workspace/sending-health", icon: HeartPulse },
     ],
   },
 ];

@@ -9,13 +9,13 @@ import {
   contacts,
   contactTags,
   tags,
+  workspaces,
   emailTemplates,
-  suppressionEntries,
   type AutomationStepConfig,
 } from "@/db/schema";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
-import { getDefaultSender } from "./sending/domains";
+import { getVerifiedDomainNames } from "./sending-domains/service";
 import type { EmailBlock } from "@/db/schema";
 
 /**
@@ -177,24 +177,16 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
       const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, templateId)).limit(1);
       if (!template) throw new Error("Template not found");
       if (contact.consentStatus !== "GRANTED") return; // silently skip — no consent, no send
-      const [suppressed] = await db
-        .select({ id: suppressionEntries.id })
-        .from(suppressionEntries)
-        .where(and(eq(suppressionEntries.workspaceId, contact.workspaceId), eq(suppressionEntries.email, contact.email)))
-        .limit(1);
-      if (suppressed) return; // unsubscribed / bounced / complained — never email again
 
       const blocks = template.blocks as EmailBlock[];
-      // Brand the email with the workspace's default verified identity when it has one; otherwise
-      // fall back to the Zendmail-managed sender (never an unverified address).
-      const defaultSender = await getDefaultSender(contact.workspaceId);
+      const [workspaceRow] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, contact.workspaceId)).limit(1);
+      const verifiedDomains = await getVerifiedDomainNames(contact.workspaceId);
       await sendCampaignEmail({
-        workspaceId: contact.workspaceId,
-        source: "AUTOMATION",
         to: contact.email,
-        fromName: defaultSender?.fromName ?? "Automation",
-        fromEmail: defaultSender?.fromEmail ?? `automations@zendmail.demo`,
-        replyTo: defaultSender?.replyTo,
+        fromName: workspaceRow?.name ?? "Zendmail",
+        // On a verified domain automations send as hello@thatdomain; otherwise the shared sender is used.
+        fromEmail: verifiedDomains[0] ? `hello@${verifiedDomains[0]}` : "automations@zendmail.demo",
+        verifiedDomains,
         subject: template.subject ?? "",
         html: renderBlocksToHtml(blocks),
         text: renderBlocksToText(blocks),

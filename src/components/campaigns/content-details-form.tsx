@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import Link from "next/link";
 import { updateContentDetailsAction } from "@/lib/actions/campaign-actions";
 import type { ActionState } from "@/lib/actions/auth-actions";
 import { Field, Input, ErrorBanner, SuccessBanner } from "@/components/auth/form-elements";
@@ -8,10 +9,10 @@ import { Button } from "@/components/ui/button";
 
 export function ContentDetailsForm({
   campaign,
-  verifiedSenders = [],
+  verifiedDomains = [],
 }: {
-  /** Verified sending identities in this workspace, offered as From-address suggestions. */
-  verifiedSenders?: { fromEmail: string; fromName: string }[];
+  /** Lower-case domains this workspace has verified for sending. */
+  verifiedDomains?: string[];
   campaign: {
     id: string;
     name: string;
@@ -26,6 +27,11 @@ export function ContentDetailsForm({
     updateContentDetailsAction,
     undefined
   );
+
+  const [fromEmail, setFromEmail] = useState(campaign.fromEmail);
+  const fromDomain = fromEmail.split("@")[1]?.trim().toLowerCase() ?? "";
+  const hasValidAddress = fromEmail.includes("@") && fromDomain.includes(".");
+  const onVerifiedDomain = verifiedDomains.includes(fromDomain);
 
   return (
     <form action={formAction} className="space-y-4">
@@ -42,16 +48,36 @@ export function ContentDetailsForm({
           <Input id="fromName" name="fromName" defaultValue={campaign.fromName} required />
         </Field>
         <Field label="From email" htmlFor="fromEmail">
-          <Input id="fromEmail" name="fromEmail" type="email" list="verified-senders" defaultValue={campaign.fromEmail} required />
-          <datalist id="verified-senders">
-            {verifiedSenders.map((s) => (
-              <option key={s.fromEmail} value={s.fromEmail}>
-                {s.fromName}
-              </option>
-            ))}
-          </datalist>
+          <Input
+            id="fromEmail"
+            name="fromEmail"
+            type="email"
+            value={fromEmail}
+            onChange={(e) => setFromEmail(e.target.value)}
+            required
+          />
         </Field>
       </div>
+
+      {hasValidAddress && (
+        <p
+          className={`rounded-[10px] px-3 py-2 text-[12px] leading-[1.5] ${
+            onVerifiedDomain ? "bg-success-surface text-success" : "bg-surface-secondary text-text-secondary"
+          }`}
+        >
+          {onVerifiedDomain ? (
+            <>Verified domain: emails will be sent from this address.</>
+          ) : (
+            <>
+              <strong>{fromDomain}</strong> isn&apos;t a verified sending domain, so emails go out from Zendmail&apos;s shared
+              address and replies come to this address.{" "}
+              <Link href="/workspace/domains" className="font-semibold text-primary underline">
+                Verify your domain
+              </Link>
+            </>
+          )}
+        </p>
+      )}
 
       <Field label="Reply-to (optional)" htmlFor="replyTo">
         <Input id="replyTo" name="replyTo" type="email" defaultValue={campaign.replyTo ?? ""} />
