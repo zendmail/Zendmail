@@ -21,9 +21,9 @@ const securityHeaders = [
       // email-preview iframes' srcDoc content; tighten with a nonce if you
       // later add a CSP-reporting endpoint to monitor real violations.
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https://api.anthropic.com https://api.stripe.com",
       "frame-src 'self'",
       "object-src 'none'",

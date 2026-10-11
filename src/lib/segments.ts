@@ -17,42 +17,67 @@ export type RuleInput = {
 function ruleToCondition(ruleInput: RuleInput) {
   const rule = { ...ruleInput, value: ruleInput.value ?? "" };
   switch (rule.field) {
-    case "STATUS":
+    case "STATUS": {
+      if (rule.operator === "IS_NULL") return isNull(contacts.status);
+      if (rule.operator === "IS_NOT_NULL") return isNotNull(contacts.status);
       return rule.operator === "NOT_EQUALS"
         ? ne(contacts.status, rule.value as (typeof contacts.$inferSelect)["status"])
         : eq(contacts.status, rule.value as (typeof contacts.$inferSelect)["status"]);
+    }
 
-    case "CONSENT_STATUS":
+    case "CONSENT_STATUS": {
+      if (rule.operator === "IS_NULL") return isNull(contacts.consentStatus);
+      if (rule.operator === "IS_NOT_NULL") return isNotNull(contacts.consentStatus);
       return rule.operator === "NOT_EQUALS"
         ? ne(contacts.consentStatus, rule.value as (typeof contacts.$inferSelect)["consentStatus"])
         : eq(contacts.consentStatus, rule.value as (typeof contacts.$inferSelect)["consentStatus"]);
+    }
 
-    case "COUNTRY":
+    case "COUNTRY": {
+      if (rule.operator === "IS_NULL") return isNull(contacts.country);
+      if (rule.operator === "IS_NOT_NULL") return isNotNull(contacts.country);
       return rule.operator === "NOT_EQUALS"
         ? or(ne(contacts.country, rule.value), isNull(contacts.country))
         : eq(contacts.country, rule.value);
+    }
 
     case "TOTAL_SPENT": {
       const n = Number(rule.value) || 0;
-      return rule.operator === "LESS_THAN"
-        ? lt(contacts.totalSpent, String(n))
-        : gt(contacts.totalSpent, String(n));
+      switch (rule.operator) {
+        case "EQUALS": return eq(contacts.totalSpent, n);
+        case "NOT_EQUALS": return ne(contacts.totalSpent, n);
+        case "GREATER_THAN": return gt(contacts.totalSpent, n);
+        case "LESS_THAN": return lt(contacts.totalSpent, n);
+        default: return eq(contacts.totalSpent, n);
+      }
     }
 
     case "TOTAL_ORDERS": {
       const n = Number(rule.value) || 0;
-      return rule.operator === "LESS_THAN" ? lt(contacts.totalOrders, n) : gt(contacts.totalOrders, n);
+      switch (rule.operator) {
+        case "EQUALS": return eq(contacts.totalOrders, n);
+        case "NOT_EQUALS": return ne(contacts.totalOrders, n);
+        case "GREATER_THAN": return gt(contacts.totalOrders, n);
+        case "LESS_THAN": return lt(contacts.totalOrders, n);
+        default: return eq(contacts.totalOrders, n);
+      }
     }
 
     case "LAST_PURCHASE_AT": {
       if (rule.operator === "IS_NULL") return isNull(contacts.lastPurchaseAt);
       if (rule.operator === "IS_NOT_NULL") return isNotNull(contacts.lastPurchaseAt);
-      // BEFORE / AFTER a rolling "N days ago" cutoff, e.g. value="60" -> 60 days ago
+
       const days = Number(rule.value) || 0;
       const cutoff = sql`now() - (${days} || ' days')::interval`;
-      return rule.operator === "BEFORE"
-        ? sql`(${contacts.lastPurchaseAt} is null or ${contacts.lastPurchaseAt} < ${cutoff})`
-        : gt(contacts.lastPurchaseAt, cutoff);
+      switch (rule.operator) {
+        case "EQUALS": return eq(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
+        case "NOT_EQUALS": return ne(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
+        case "GREATER_THAN": return gt(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
+        case "LESS_THAN": return lt(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
+        case "BEFORE": return sql`(${contacts.lastPurchaseAt} is null or ${contacts.lastPurchaseAt} < ${cutoff})`;
+        case "AFTER": return gt(contacts.lastPurchaseAt, cutoff);
+        default: return eq(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
+      }
     }
 
     case "HAS_TAG": {
@@ -62,7 +87,8 @@ function ruleToCondition(ruleInput: RuleInput) {
         .innerJoin(tags, eq(contactTags.tagId, tags.id))
         .where(and(eq(contactTags.contactId, contacts.id), eq(tags.name, rule.value)));
 
-      return rule.operator === "NOT_EQUALS" ? sql`not exists ${tagSubquery}` : exists(tagSubquery);
+      if (rule.operator === "NOT_EQUALS") return sql`not exists ${tagSubquery}`;
+      return exists(tagSubquery);
     }
 
     default:

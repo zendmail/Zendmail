@@ -10,10 +10,12 @@ import {
   contactTags,
   tags,
   emailTemplates,
+  workspaces,
   suppressionEntries,
   type AutomationStepConfig,
 } from "@/db/schema";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
+import { applyMergeTags, buildVars } from "./email-builder/merge";
 import { sendCampaignEmail } from "./email";
 import { getDefaultSender } from "./sending/domains";
 import type { EmailBlock } from "@/db/schema";
@@ -188,6 +190,9 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
       // Brand the email with the workspace's default verified identity when it has one; otherwise
       // fall back to the Zendmail-managed sender (never an unverified address).
       const defaultSender = await getDefaultSender(contact.workspaceId);
+      const [workspaceRow] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, contact.workspaceId)).limit(1);
+      const vars = buildVars({ firstName: contact.firstName, lastName: contact.lastName, email: contact.email, businessName: workspaceRow?.name });
+      const renderOptions = { theme: template.theme, vars, preheader: template.previewText };
       await sendCampaignEmail({
         workspaceId: contact.workspaceId,
         source: "AUTOMATION",
@@ -195,9 +200,9 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
         fromName: defaultSender?.fromName ?? "Automation",
         fromEmail: defaultSender?.fromEmail ?? `automations@zendmail.demo`,
         replyTo: defaultSender?.replyTo,
-        subject: template.subject ?? "",
-        html: renderBlocksToHtml(blocks),
-        text: renderBlocksToText(blocks),
+        subject: applyMergeTags(template.subject ?? "", vars, "text"),
+        html: renderBlocksToHtml(blocks, null, renderOptions),
+        text: renderBlocksToText(blocks, null, renderOptions),
       });
       return;
     }

@@ -85,6 +85,13 @@
       "when": 1790888430080,
       "tag": "0011_sending_domains",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791400275258,
+      "tag": "0012_template_tiers_and_themes",
+      "breakpoints": true
     }
   ]
 }

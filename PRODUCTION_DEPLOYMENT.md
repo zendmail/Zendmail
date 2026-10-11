@@ -263,3 +263,15 @@ Not a slogan — specific properties this deployment actually has:
 - **No blind spots**: health checks, error tracking, and cron monitoring mean you find out about problems from a dashboard, not from a support email.
 
 This is the same fundamental architecture used by production SaaS companies at far larger scale than a launch will need — the pattern doesn't change as you grow, mostly just the sizing numbers in §8 and §11.
+
+---
+
+## Email template library (Free / Pro)
+
+The built-in templates live in `src/lib/template-library/` — `free.ts` (9 designs) and `pro.ts` (12 designs). Each has a stable `key`, a `tier` (`FREE` or `PRO`), a colour/font `theme`, and a list of blocks.
+
+- **Install / update them** with `npm run db:seed` (safe to run any number of times). It updates templates in place by `key`, and upgrades the original built-ins by name so campaigns created from them keep their link. Workspace-owned templates are never touched. Run `npm run db:migrate` first when deploying this release (adds `key`, `tier`, `description`, `sort_order`, `theme` to `email_templates` and `theme` to `campaigns`).
+- **Free vs Pro:** anyone can preview every template; only paid plans (any plan other than "Free") can *use* a Pro template. This is enforced on the server in `createCampaignFromTemplateAction` / `applyTemplateAction`, not just by hiding buttons.
+- **Add a new template:** add an entry to `free.ts` or `pro.ts` (use the `mk()` helpers; colours can be theme tokens such as `@primary`), then run `npm run db:seed`. `tests/email-builder.test.ts` checks every template renders and that all of its fields pass the editor's validation.
+- **Pictures:** icons, wave dividers and product illustrations are drawn on demand by `GET /api/email-assets/<kind>` in the workspace's brand colours (email apps can't show SVG). Customers replace them with their own photos using the editor's Upload button.
+- **Merge tags** available in any text: `{{first_name}}`, `{{first_name|there}}` (with fallback), `{{last_name}}`, `{{full_name}}`, `{{email}}`, `{{business_name}}`, `{{unsubscribe_url}}`.

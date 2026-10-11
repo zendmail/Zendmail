@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTransition } from "react";
-import { ArrowUp, ArrowDown, GripVertical, LoaderCircle, Trash2, Type, Heading1, Image as ImageIcon, ImageUp, MousePointerClick, Minus, MoveVertical, FileText } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronDown, GripVertical, LoaderCircle, Trash2, Type, Heading1, Image as ImageIcon, ImageUp, MousePointerClick, Minus, MoveVertical, FileText, LayoutPanelTop, Rows3, ListChecks, MessageSquareQuote, Columns2, Megaphone, Waves, Share2, Link2, Ticket, PanelTop } from "lucide-react";
 import {
   addBlockAction,
   removeBlockAction,
@@ -10,19 +10,28 @@ import {
   reorderBlocksAction,
   updateBlockFieldAction,
 } from "@/lib/actions/campaign-actions";
-import type { EmailBlock } from "@/db/schema";
+import type { EmailBlock, EmailTheme } from "@/db/schema";
+import { SECTION_DEFS, isSectionType, type SectionType } from "@/lib/email-builder/schema";
+import { SectionFields } from "@/components/campaigns/section-fields";
 import { Input } from "@/components/auth/form-elements";
 import { Button } from "@/components/ui/button";
 
-const blockTypeMeta: { type: EmailBlock["type"]; label: string; icon: typeof Type }[] = [
+const basicBlockMeta: { type: EmailBlock["type"]; label: string; icon: typeof Type }[] = [
   { type: "heading", label: "Heading", icon: Heading1 },
   { type: "text", label: "Text", icon: Type },
   { type: "image", label: "Image", icon: ImageIcon },
   { type: "button", label: "Button", icon: MousePointerClick },
   { type: "divider", label: "Divider", icon: Minus },
   { type: "spacer", label: "Spacer", icon: MoveVertical },
-  { type: "footer", label: "Footer", icon: FileText },
 ];
+
+const sectionIcons: Record<SectionType, typeof Type> = {
+  header: PanelTop, hero: LayoutPanelTop, coupon: Ticket, cards: Rows3, list: ListChecks, testimonials: MessageSquareQuote,
+  split: Columns2, callout: Megaphone, wave: Waves, social: Share2, links: Link2, footer: FileText,
+};
+
+const sectionBlockMeta = (Object.keys(SECTION_DEFS) as SectionType[]).map((type) => ({ type, label: SECTION_DEFS[type].label, icon: sectionIcons[type] }));
+const blockTypeMeta = [...basicBlockMeta, ...sectionBlockMeta];
 
 function useFieldSave(campaignId: string, blockId: string) {
   const [, startTransition] = useTransition();
@@ -153,7 +162,7 @@ function ImageBlockFields({ campaignId, block }: { campaignId: string; block: Ex
   );
 }
 
-function BlockFields({ campaignId, block }: { campaignId: string; block: EmailBlock }) {
+function LegacyBlockFields({ campaignId, block }: { campaignId: string; block: EmailBlock }) {
   const save = useFieldSave(campaignId, block.id);
 
   switch (block.type) {
@@ -219,7 +228,18 @@ function BlockFields({ campaignId, block }: { campaignId: string; block: EmailBl
   }
 }
 
-export function BlockEditor({ campaignId, blocks }: { campaignId: string; blocks: EmailBlock[] }) {
+function BlockFields({ campaignId, block, theme }: { campaignId: string; block: EmailBlock; theme: EmailTheme }) {
+  return isSectionType(block.type) ? (
+    <SectionFields campaignId={campaignId} block={block} theme={theme} />
+  ) : (
+    <LegacyBlockFields campaignId={campaignId} block={block} />
+  );
+}
+
+export function BlockEditor({ campaignId, blocks, theme }: { campaignId: string; blocks: EmailBlock[]; theme: EmailTheme }) {
+  // Section blocks have many fields, so they start collapsed; the simple blocks are always open.
+  const [openIds, setOpenIds] = React.useState<Set<string>>(() => new Set());
+  const toggleOpen = (id: string) => setOpenIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const [orderedBlockIds, setOrderedBlockIds] = React.useState<string[] | null>(null);
   const [draggingId, setDraggingId] = React.useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -262,8 +282,8 @@ export function BlockEditor({ campaignId, blocks }: { campaignId: string; blocks
               onDrop={(event) => handleDrop(event, block.id)}
               className={`rounded-[var(--radius-md)] border border-border p-3 transition-colors ${draggingId === block.id ? "opacity-50" : ""}`}
             >
-              <div className="mb-2.5 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-[12px] font-medium uppercase tracking-wide text-text-tertiary">
+              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                <span className="flex min-w-0 items-center gap-1.5 text-[12px] font-medium uppercase tracking-wide text-text-tertiary">
                   <button
                     type="button"
                     draggable
@@ -281,8 +301,22 @@ export function BlockEditor({ campaignId, blocks }: { campaignId: string; blocks
                   </button>
                   <Icon size={13} />
                   {meta.label}
+                  {isSectionType(block.type) && !openIds.has(block.id) && (
+                    <span className="ml-1 max-w-[120px] truncate sm:max-w-[170px] text-[12px] font-normal normal-case tracking-normal text-text-secondary">{SECTION_DEFS[block.type].summary(block as unknown as Record<string, unknown>)}</span>
+                  )}
                 </span>
                 <div className="flex items-center gap-1">
+                  {isSectionType(block.type) && (
+                    <button
+                      type="button"
+                      onClick={() => toggleOpen(block.id)}
+                      aria-expanded={openIds.has(block.id)}
+                      className="mr-1 inline-flex h-6 items-center gap-1 rounded px-2 text-[11.5px] font-semibold text-primary hover:bg-primary-surface"
+                    >
+                      {openIds.has(block.id) ? "Done" : "Edit"}
+                      <ChevronDown size={12} className={openIds.has(block.id) ? "rotate-180" : ""} />
+                    </button>
+                  )}
                   <form action={moveBlockAction}>
                     <input type="hidden" name="campaignId" value={campaignId} />
                     <input type="hidden" name="blockId" value={block.id} />
@@ -324,7 +358,7 @@ export function BlockEditor({ campaignId, blocks }: { campaignId: string; blocks
                   </form>
                 </div>
               </div>
-              <BlockFields campaignId={campaignId} block={block} />
+              {(!isSectionType(block.type) || openIds.has(block.id)) && <BlockFields campaignId={campaignId} block={block} theme={theme} />}
             </div>
           );
         })}
@@ -336,21 +370,26 @@ export function BlockEditor({ campaignId, blocks }: { campaignId: string; blocks
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5 border-t border-border pt-3">
-        {blockTypeMeta.map((meta) => {
-          const Icon = meta.icon;
-          return (
-            <form key={meta.type} action={addBlockAction} onSubmit={() => setOrderedBlockIds(null)}>
-              <input type="hidden" name="campaignId" value={campaignId} />
-              <input type="hidden" name="blockType" value={meta.type} />
-              <Button type="submit" variant="secondary" size="sm">
-                <Icon size={13} />
-                {meta.label}
-              </Button>
-            </form>
-          );
-        })}
-      </div>
+      {([["Basic blocks", basicBlockMeta], ["Sections", sectionBlockMeta]] as const).map(([title, list]) => (
+        <div key={title} className="border-t border-border pt-3">
+          <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-wide text-text-tertiary">{title}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {list.map((meta) => {
+              const Icon = meta.icon;
+              return (
+                <form key={meta.type} action={addBlockAction} onSubmit={() => setOrderedBlockIds(null)}>
+                  <input type="hidden" name="campaignId" value={campaignId} />
+                  <input type="hidden" name="blockType" value={meta.type} />
+                  <Button type="submit" variant="secondary" size="sm">
+                    <Icon size={13} />
+                    {meta.label}
+                  </Button>
+                </form>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

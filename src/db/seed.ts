@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { db } from "./client";
-import { plans, emailTemplates, featureFlags } from "./schema";
-import { starterTemplates } from "../lib/starter-templates";
+import { plans, featureFlags } from "./schema";
+import { syncBuiltInTemplates } from "../lib/template-library/sync";
 
 const defaultPlans = [
   {
@@ -65,22 +65,8 @@ async function main() {
   }
   console.log(`Seeded ${defaultPlans.length} plans.`);
 
-  const existingTemplates = await db.select({ id: emailTemplates.id }).from(emailTemplates).limit(1);
-  if (existingTemplates.length === 0) {
-    await db.insert(emailTemplates).values(
-      starterTemplates.map((t) => ({
-        workspaceId: null,
-        name: t.name,
-        category: t.category,
-        subject: t.subject,
-        previewText: t.previewText,
-        blocks: t.blocks,
-      }))
-    );
-    console.log(`Seeded ${starterTemplates.length} starter templates.`);
-  } else {
-    console.log("Starter templates already seeded, skipping.");
-  }
+  const templateResult = await syncBuiltInTemplates();
+  console.log(`Templates: ${templateResult.inserted} added, ${templateResult.updated} updated (${templateResult.total} in library).`);
 
   const defaultFlags = [
     { key: "ai_studio", name: "AI Studio", description: "Enable the AI email generation tools.", enabled: true },

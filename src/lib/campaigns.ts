@@ -5,6 +5,7 @@ import { campaigns, campaignRecipients, contacts, suppressionEntries, segments, 
 import { buildSegmentCondition, type RuleInput } from "./segments";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
+import { buildVars, applyMergeTags } from "./email-builder/merge";
 import { appUrl } from "./app-url";
 import { runPreSendChecks, PreSendBlockedError } from "./sending/presend";
 
@@ -187,6 +188,7 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
   });
 
   const blocks = campaign.blocks as EmailBlock[];
+  const [workspaceRow] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
 
   let failed = 0;
   for (const contact of audience) {
@@ -196,8 +198,18 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
       .returning();
 
     const tracking = { recipientId: recipient.id };
-    const html = renderBlocksToHtml(blocks, tracking);
-    const text = renderBlocksToText(blocks, tracking);
+    // Personalise per recipient: merge tags ({{first_name}}, {{business_name}}…), brand theme and inbox preview line.
+    const unsubscribeUrl = appUrl(`/api/t/unsubscribe/${recipient.id}`);
+    const vars = buildVars({
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      email: contact.email,
+      businessName: workspaceRow?.name,
+      unsubscribeUrl,
+    });
+    const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText };
+    const html = renderBlocksToHtml(blocks, tracking, renderOptions);
+    const text = renderBlocksToText(blocks, tracking, renderOptions);
 
     try {
       await sendCampaignEmail({
@@ -207,10 +219,10 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
         fromName: campaign.fromName,
         fromEmail: campaign.fromEmail,
         replyTo: campaign.replyTo,
-        subject: campaign.subject,
+        subject: applyMergeTags(campaign.subject, vars, "text"),
         html,
         text,
-        unsubscribeUrl: appUrl(`/api/t/unsubscribe/${recipient.id}`),
+        unsubscribeUrl,
       });
     } catch (error) {
       // A single rejected address (or a provider hiccup) must not strand the whole campaign in SENDING.

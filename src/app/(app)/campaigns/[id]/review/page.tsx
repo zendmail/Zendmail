@@ -168,7 +168,7 @@ export default async function CampaignReviewPage({
 
         <div className="space-y-2 lg:sticky lg:top-20 lg:self-start">
           <p className="text-[13px] font-medium text-text-secondary">Preview</p>
-          <EmailPreview blocks={blocks} />
+          <EmailPreview blocks={blocks} theme={campaign.theme} previewText={campaign.previewText} businessName={workspace.name} />
         </div>
       </div>
     </div>

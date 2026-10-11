@@ -1,42 +1,43 @@
+import Link from "next/link";
+import { Crown, Lock } from "lucide-react";
 import { applyTemplateAction } from "@/lib/actions/campaign-actions";
-import { categoryImages, categoryLabels, type Template } from "@/components/templates/template-catalog";
+import { TemplateThumb } from "@/components/templates/template-frame";
+import { categoryLabels } from "@/components/templates/template-catalog";
+import { canUseTemplate } from "@/lib/template-access";
+import type { TemplateListItem } from "@/components/templates/template-types";
 
-export async function TemplatePicker({
-  campaignId,
-  templates,
-}: {
-  campaignId: string;
-  templates: Template[];
-}) {
+/** A scrolling strip of live template thumbnails. Pro templates are previewable but locked on the Free plan. */
+export function TemplatePicker({ campaignId, templates, planName }: { campaignId: string; templates: TemplateListItem[]; planName: string }) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {templates.map((t) => (
-        <form key={t.id} action={applyTemplateAction} className="min-w-0">
-          <input type="hidden" name="campaignId" value={campaignId} />
-          <input type="hidden" name="templateId" value={t.id} />
-          <button
-            type="submit"
-            aria-label={`Use ${t.name} template`}
-            className="flex w-full min-w-0 items-center gap-3 rounded-[var(--radius-md)] border border-border bg-surface p-2 text-left transition-[border-color,background-color] duration-150 hover:border-primary/60 hover:bg-surface-secondary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-          >
-            <span
-              role="img"
-              aria-label={`${categoryLabels[t.category] || "Custom"} template image`}
-              className="aspect-video w-[76px] shrink-0 rounded-[4px] border border-border bg-cover bg-center"
-              style={{ backgroundImage: `url("${categoryImages[t.category] ?? categoryImages.CUSTOM}")` }}
-            />
-            <span className="min-w-0 flex-1 py-0.5">
-              <span className="mb-1 block truncate text-[13px] font-semibold leading-4 text-text-primary">{t.name}</span>
-              <span className="block truncate text-[12px] leading-4 text-text-secondary">
-                {t.subject || t.previewText || "Email template"}
-              </span>
-              <span className="mt-1 block truncate text-[10px] font-semibold uppercase tracking-wide text-text-tertiary">
-                {categoryLabels[t.category] || "Custom"}
-              </span>
-            </span>
-          </button>
-        </form>
-      ))}
+    <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-2">
+      {templates.map((t) => {
+        const locked = !canUseTemplate(planName, t.tier);
+        return (
+          <div key={t.id} className="w-[172px] shrink-0 snap-start overflow-hidden rounded-[14px] border border-border bg-surface">
+            <div className="relative">
+              <TemplateThumb id={t.id} name={t.name} height={210} />
+              {t.tier === "PRO" && (
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-0.5 text-[10.5px] font-bold text-primary shadow-[var(--shadow-xs)]"><Crown size={10} /> Pro</span>
+              )}
+            </div>
+            <div className="space-y-2 p-2.5">
+              <div className="min-w-0">
+                <p className="truncate text-[12.5px] font-bold text-text-primary" title={t.name}>{t.name}</p>
+                <p className="truncate text-[10.5px] font-semibold uppercase tracking-wide text-text-tertiary">{categoryLabels[t.category] ?? "Custom"}</p>
+              </div>
+              {locked ? (
+                <Link href="/workspace/billing?upgrade=templates" className="flex h-8 w-full items-center justify-center gap-1.5 rounded-[8px] bg-[#0B1A3D] text-[12px] font-semibold text-white hover:bg-[#13285A]"><Lock size={12} /> Upgrade</Link>
+              ) : (
+                <form action={applyTemplateAction}>
+                  <input type="hidden" name="campaignId" value={campaignId} />
+                  <input type="hidden" name="templateId" value={t.id} />
+                  <button type="submit" aria-label={`Use ${t.name} template`} className="flex h-8 w-full items-center justify-center rounded-[8px] bg-primary text-[12px] font-semibold text-white hover:bg-primary-hover">Use template</button>
+                </form>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

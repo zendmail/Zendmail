@@ -78,7 +78,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
           <CardTitle>Email content</CardTitle>
         </CardHeader>
         <CardContent>
-          <EmailPreview blocks={blocks} />
+          <EmailPreview blocks={blocks} theme={campaign.theme} previewText={campaign.previewText} businessName={workspace.name} />
         </CardContent>
       </Card>
     </div>
