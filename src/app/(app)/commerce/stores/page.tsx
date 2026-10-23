@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShopifyConnectForm, WooCommerceConnectForm } from "@/components/commerce/store-connect-forms";
 import { StoreSyncControl } from "@/components/commerce/store-sync-control";
+import { BrandLogo } from "@/components/commerce/brand-logo";
 
 type StoresPageProps = {
   searchParams: Promise<{ connected?: string; disconnected?: string; error?: string }>;
@@ -78,7 +79,12 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
   });
 
   const encryptionConfigured = isStoreCredentialsEncryptionConfigured();
-  const shopifyConfigured = Boolean(process.env.SHOPIFY_CLIENT_ID && process.env.SHOPIFY_CLIENT_SECRET && encryptionConfigured);
+  const missingShopifyConfig = [
+    !process.env.SHOPIFY_CLIENT_ID && "SHOPIFY_CLIENT_ID",
+    !process.env.SHOPIFY_CLIENT_SECRET && "SHOPIFY_CLIENT_SECRET",
+    !encryptionConfigured && "STORE_CREDENTIALS_ENCRYPTION_KEY",
+  ].filter((name): name is string => Boolean(name));
+  const shopifyConfigured = missingShopifyConfig.length === 0;
 
   return (
     <div className="mx-auto max-w-[1200px] space-y-6">
@@ -95,7 +101,7 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-primary-surface text-primary"><Store size={18} /></span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-primary-surface text-primary"><BrandLogo brand="shopify" fallback={<Store size={18} />} /></span>
               <div>
                 <CardTitle>Shopify</CardTitle>
                 <p className="mt-0.5 text-[12px] text-text-secondary">Authorize securely with Shopify OAuth</p>
@@ -104,14 +110,14 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
             <Badge tone={shopifyConfigured ? "success" : "warning"}>{shopifyConfigured ? "Ready" : "Setup required"}</Badge>
           </CardHeader>
           <CardContent>
-            <ShopifyConnectForm configured={shopifyConfigured} />
+            <ShopifyConnectForm configured={shopifyConfigured} missing={missingShopifyConfig} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-surface-secondary text-text-secondary"><PlugZap size={18} /></span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-surface-secondary text-text-secondary"><BrandLogo brand="woocommerce" fallback={<PlugZap size={18} />} /></span>
               <div>
                 <CardTitle>WooCommerce</CardTitle>
                 <p className="mt-0.5 text-[12px] text-text-secondary">Verify a read-only REST API key</p>

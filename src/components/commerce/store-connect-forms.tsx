@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ErrorBanner, Field, Input, SuccessBanner } from "@/components/auth/form-elements";
 import { connectWooCommerceAction } from "@/lib/actions/store-actions";
 
-export function ShopifyConnectForm({ configured }: { configured: boolean }) {
+export function ShopifyConnectForm({ configured, missing = [] }: { configured: boolean; missing?: string[] }) {
   return (
     <form action="/api/integrations/shopify/connect" method="post" className="space-y-3">
       <Field label="Shopify domain" htmlFor="shopify-domain">
@@ -27,6 +27,7 @@ export function ShopifyConnectForm({ configured }: { configured: boolean }) {
       {!configured && (
         <p className="text-[12px] leading-[1.5] text-warning">
           Shopify OAuth and store encryption need to be configured by your administrator before connecting.
+          {missing.length > 0 && <> Missing: <code className="font-mono">{missing.join(", ")}</code>.</>}
         </p>
       )}
     </form>
