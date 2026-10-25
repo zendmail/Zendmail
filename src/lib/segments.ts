@@ -43,12 +43,13 @@ function ruleToCondition(ruleInput: RuleInput) {
 
     case "TOTAL_SPENT": {
       const n = Number(rule.value) || 0;
+      const amount = String(n);
       switch (rule.operator) {
-        case "EQUALS": return eq(contacts.totalSpent, n);
-        case "NOT_EQUALS": return ne(contacts.totalSpent, n);
-        case "GREATER_THAN": return gt(contacts.totalSpent, n);
-        case "LESS_THAN": return lt(contacts.totalSpent, n);
-        default: return eq(contacts.totalSpent, n);
+        case "EQUALS": return eq(contacts.totalSpent, amount);
+        case "NOT_EQUALS": return ne(contacts.totalSpent, amount);
+        case "GREATER_THAN": return gt(contacts.totalSpent, amount);
+        case "LESS_THAN": return lt(contacts.totalSpent, amount);
+        default: return eq(contacts.totalSpent, amount);
       }
     }
 
@@ -69,15 +70,9 @@ function ruleToCondition(ruleInput: RuleInput) {
 
       const days = Number(rule.value) || 0;
       const cutoff = sql`now() - (${days} || ' days')::interval`;
-      switch (rule.operator) {
-        case "EQUALS": return eq(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
-        case "NOT_EQUALS": return ne(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
-        case "GREATER_THAN": return gt(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
-        case "LESS_THAN": return lt(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
-        case "BEFORE": return sql`(${contacts.lastPurchaseAt} is null or ${contacts.lastPurchaseAt} < ${cutoff})`;
-        case "AFTER": return gt(contacts.lastPurchaseAt, cutoff);
-        default: return eq(contacts.lastPurchaseAt, new Date(rule.value ?? ""));
-      }
+      return rule.operator === "BEFORE"
+        ? sql`(${contacts.lastPurchaseAt} is null or ${contacts.lastPurchaseAt} < ${cutoff})`
+        : gt(contacts.lastPurchaseAt, cutoff);
     }
 
     case "HAS_TAG": {
