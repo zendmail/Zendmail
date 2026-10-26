@@ -52,7 +52,16 @@ export default async function DigitalProductsPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => (
             <Link key={p.id} href={`/commerce/products/${p.id}`}>
-              <Card className="h-full p-5 hover:border-border-strong transition-colors">
+              <Card className="h-full overflow-hidden hover:border-border-strong transition-colors">
+                {p.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- remote store CDN images; CSP already allows https images
+                  <img src={p.imageUrl} alt={p.name} loading="lazy" className="aspect-[4/3] w-full bg-surface-secondary object-cover" />
+                ) : (
+                  <div className="flex aspect-[4/3] w-full items-center justify-center bg-surface-secondary text-text-tertiary">
+                    <Package size={28} />
+                  </div>
+                )}
+                <div className="p-5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-[14px] font-semibold text-text-primary">{p.name}</p>
                   <Badge tone="neutral">{p.type}</Badge>
@@ -73,6 +82,7 @@ export default async function DigitalProductsPage() {
                       {p.totalRevenue !== null ? formatCurrency(Number(p.totalRevenue)) : "Not synced"}
                     </p>
                   </div>
+                </div>
                 </div>
               </Card>
             </Link>

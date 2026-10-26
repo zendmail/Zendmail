@@ -92,6 +92,13 @@
       "when": 1791400275258,
       "tag": "0012_template_tiers_and_themes",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793046850945,
+      "tag": "0013_product_images",
+      "breakpoints": true
     }
   ]
 }

@@ -21,6 +21,7 @@ const shopifyProductResponseSchema = z.object({
           title: z.string(),
           productType: z.string().nullable(),
           updatedAt: z.string(),
+          featuredImage: z.object({ url: z.string() }).nullable().optional(),
           variants: z.object({ edges: z.array(z.object({ node: z.object({ price: z.string() }) })) }),
         }),
       })),
@@ -68,6 +69,7 @@ const wooProductSchema = z.object({
   name: z.string(),
   type: z.string().optional(),
   price: z.string().optional(),
+  images: z.array(z.object({ src: z.string() })).optional(),
   date_modified_gmt: z.string().nullable().optional(),
 });
 
@@ -92,7 +94,7 @@ const wooOrderSchema = z.object({
 
 const shopifyProductsQuery = `query ZendmailProducts($first: Int!, $after: String, $filter: String) {
   products(first: $first, after: $after, query: $filter, sortKey: UPDATED_AT) {
-    edges { cursor node { id title productType updatedAt variants(first: 1) { edges { node { price } } } } }
+    edges { cursor node { id title productType updatedAt featuredImage { url } variants(first: 1) { edges { node { price } } } } }
     pageInfo { hasNextPage endCursor }
   }
 }`;
@@ -164,10 +166,22 @@ function setJobProgress(jobId: string, values: Partial<typeof storeSyncJobs.$inf
   return db.update(storeSyncJobs).set({ ...values, updatedAt: new Date() }).where(eq(storeSyncJobs.id, jobId));
 }
 
+/** Product photos are shown as <img src>; only accept absolute https URLs from the source store. */
+function safeImageUrl(value: string | null | undefined) {
+  if (!value || value.length > 2048) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function upsertProducts(store: typeof stores.$inferSelect, rows: {
   externalId: string;
   name: string;
   price: number | null;
+  imageUrl: string | null;
 }[]) {
   if (rows.length === 0) return;
   const now = new Date();
@@ -178,6 +192,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
     name: row.name,
     type: "OTHER" as const,
     price: row.price === null ? null : row.price.toFixed(2),
+    imageUrl: row.imageUrl,
     updatedAt: now,
   }))).onConflictDoUpdate({
     target: [digitalProducts.storeId, digitalProducts.externalId],
@@ -185,6 +200,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
       name: sql`excluded.name`,
       type: sql`excluded.type`,
       price: sql`excluded.price`,
+      imageUrl: sql`excluded.image_url`,
       updatedAt: now,
     },
   });
@@ -243,6 +259,7 @@ async function syncShopifyProducts(store: typeof stores.$inferSelect, job: typeo
     externalId: node.id,
     name: node.title,
     price: node.variants.edges[0] ? asAmount(node.variants.edges[0].node.price) : null,
+    imageUrl: safeImageUrl(node.featuredImage?.url),
   })));
 
   const pageComplete = !connection.pageInfo.hasNextPage;
@@ -337,6 +354,7 @@ async function syncWooCommerceProducts(store: typeof stores.$inferSelect, job: t
     externalId: String(product.id),
     name: product.name,
     price: product.price ? asAmount(product.price) : null,
+    imageUrl: safeImageUrl(product.images?.[0]?.src),
   }));
   await upsertProducts(store, products);
 
