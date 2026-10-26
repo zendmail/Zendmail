@@ -101,7 +101,7 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-primary-surface text-primary"><BrandLogo brand="shopify" fallback={<Store size={18} />} /></span>
+              <span className="flex h-9 min-w-9 items-center justify-center rounded-[8px] bg-primary-surface px-2 text-primary"><BrandLogo brand="shopify" fallback={<Store size={18} />} /></span>
               <div>
                 <CardTitle>Shopify</CardTitle>
                 <p className="mt-0.5 text-[12px] text-text-secondary">Authorize securely with Shopify OAuth</p>
@@ -117,7 +117,7 @@ export default async function StoresPage({ searchParams }: StoresPageProps) {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-surface-secondary text-text-secondary"><BrandLogo brand="woocommerce" fallback={<PlugZap size={18} />} /></span>
+              <span className="flex h-9 min-w-9 items-center justify-center rounded-[8px] bg-surface-secondary px-2 text-text-secondary"><BrandLogo brand="woocommerce" fallback={<PlugZap size={18} />} /></span>
               <div>
                 <CardTitle>WooCommerce</CardTitle>
                 <p className="mt-0.5 text-[12px] text-text-secondary">Verify a read-only REST API key</p>
