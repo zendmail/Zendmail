@@ -169,7 +169,7 @@ export function evaluatePreSend(input: PreSendInput): PreSendReport {
     key: "unsubscribe",
     label: "Unsubscribe mechanism",
     status: "PASS",
-    detail: "Every message includes a per-recipient unsubscribe link and a List-Unsubscribe header.",
+    detail: "Every message includes a per-recipient unsubscribe link and one-click List-Unsubscribe headers.",
     blocking: false,
   });
   checks.push({

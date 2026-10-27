@@ -11,3 +11,13 @@ export const legal = {
   jurisdiction: process.env.LEGAL_JURISDICTION || "[governing law / jurisdiction — set LEGAL_JURISDICTION]",
   lastUpdated: "27 October 2026",
 };
+
+/**
+ * Postal address printed in the footer of every marketing email sent through the platform.
+ * Returns undefined until a real address is configured, so a [placeholder] is never emailed.
+ */
+export function emailFooterAddress(): string | undefined {
+  const address = process.env.LEGAL_ADDRESS?.trim();
+  if (!address) return undefined;
+  return `${legal.company}, ${address}`;
+}

@@ -18,6 +18,8 @@ export type RenderOptions = {
   vars?: MergeVars;
   /** Inbox preview line shown next to the subject. */
   preheader?: string | null;
+  /** Physical postal address printed under the content (required in marketing email by CAN-SPAM, GDPR/ePrivacy rules and most mailbox providers). */
+  postalAddress?: string | null;
 };
 
 const WIDTH = 600;
@@ -375,6 +377,10 @@ export function renderEmailHtml(blocks: EmailBlock[], options: RenderOptions = {
   const c = makeCtx(theme, tracking);
   const body = blocks.map((b) => renderBlock(b, c)).join("\n");
   const fonts = googleFontsHref(theme);
+  const postalAddress = options.postalAddress?.trim();
+  const postal = postalAddress
+    ? `<div style="max-width:${WIDTH}px;margin:14px auto 0;font-family:${c.body};font-size:11px;line-height:1.5;color:${mix(contrastOn(theme.bg), theme.bg, 0.45)};text-align:center;">${esc(postalAddress)}</div>`
+    : "";
   const pixel = tracking
     ? `<img src="${esc(appUrl(`/api/t/open/${tracking.recipientId}`))}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />`
     : "";
@@ -418,6 +424,7 @@ ${preheader}
 <table role="presentation" class="container" width="${WIDTH}" cellpadding="0" cellspacing="0" border="0" bgcolor="${theme.surface}" style="width:${WIDTH}px;max-width:100%;background-color:${theme.surface};border-radius:18px;overflow:hidden;">
 ${body}
 </table>
+${postal}
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr>
 </table>
@@ -458,5 +465,6 @@ export function renderEmailText(blocks: EmailBlock[], options: RenderOptions = {
     })
     .filter(Boolean)
     .join("\n\n");
-  return applyMergeTags(out, options.vars ?? SAMPLE_VARS, "text");
+  const postalText = options.postalAddress?.trim();
+  return applyMergeTags(postalText ? `${out}\n\n${postalText}` : out, options.vars ?? SAMPLE_VARS, "text");
 }

@@ -119,7 +119,13 @@ export async function sendCampaignEmail(input: {
     subject: input.subject,
     html: input.html,
     text: input.text,
-    headers: input.unsubscribeUrl ? { "List-Unsubscribe": `<${input.unsubscribeUrl}>` } : undefined,
+    // RFC 8058 one-click: Gmail/Yahoo require List-Unsubscribe-Post alongside an HTTPS List-Unsubscribe URL.
+    headers: input.unsubscribeUrl
+      ? {
+          "List-Unsubscribe": `<${input.unsubscribeUrl}>`,
+          ...(input.unsubscribeUrl.startsWith("https://") ? { "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } : {}),
+        }
+      : undefined,
   });
 
   if (messageId) {

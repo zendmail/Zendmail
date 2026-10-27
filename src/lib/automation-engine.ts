@@ -14,6 +14,7 @@ import {
   suppressionEntries,
   type AutomationStepConfig,
 } from "@/db/schema";
+import { emailFooterAddress } from "./legal";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { applyMergeTags, buildVars } from "./email-builder/merge";
 import { sendCampaignEmail } from "./email";
@@ -192,7 +193,7 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
       const defaultSender = await getDefaultSender(contact.workspaceId);
       const [workspaceRow] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, contact.workspaceId)).limit(1);
       const vars = buildVars({ firstName: contact.firstName, lastName: contact.lastName, email: contact.email, businessName: workspaceRow?.name });
-      const renderOptions = { theme: template.theme, vars, preheader: template.previewText };
+      const renderOptions = { theme: template.theme, vars, preheader: template.previewText, postalAddress: emailFooterAddress() };
       await sendCampaignEmail({
         workspaceId: contact.workspaceId,
         source: "AUTOMATION",

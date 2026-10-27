@@ -3,6 +3,7 @@ import { and, eq, desc, sql, lte, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { campaigns, campaignRecipients, contacts, suppressionEntries, segments, segmentRules, workspaces, type EmailBlock } from "@/db/schema";
 import { buildSegmentCondition, type RuleInput } from "./segments";
+import { emailFooterAddress } from "./legal";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
 import { buildVars, applyMergeTags } from "./email-builder/merge";
@@ -207,7 +208,7 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
       businessName: workspaceRow?.name,
       unsubscribeUrl,
     });
-    const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText };
+    const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText, postalAddress: emailFooterAddress() };
     const html = renderBlocksToHtml(blocks, tracking, renderOptions);
     const text = renderBlocksToText(blocks, tracking, renderOptions);
 
