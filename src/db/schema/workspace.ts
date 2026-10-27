@@ -39,6 +39,8 @@ export const workspaces = pgTable("workspaces", {
   website: text("website"),
   industry: text("industry"),
   country: text("country"),
+  // Physical postal address printed in every marketing email footer (CAN-SPAM / GDPR / mailbox-provider requirement).
+  postalAddress: text("postal_address"),
   currency: text("currency").default("USD").notNull(),
   timezone: text("timezone").default("UTC").notNull(),
   useCase: businessUseCaseEnum("use_case"),

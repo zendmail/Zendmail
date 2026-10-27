@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { campaignRecipients, contacts, suppressionEntries } from "@/db/schema";
 import { recordAuditLog } from "@/lib/audit";
+import { parseContactUnsubscribeToken } from "@/lib/unsubscribe-token";
 
 function page(title: string, body: string) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>${title}</title>
@@ -29,6 +30,13 @@ function errorPage() {
 }
 
 async function loadContact(recipientId: string) {
+  // Automation emails carry a signed contact token instead of a campaign recipient id.
+  if (recipientId.startsWith("c.")) {
+    const contactId = parseContactUnsubscribeToken(recipientId);
+    if (!contactId) return null;
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, contactId)).limit(1);
+    return contact ?? null;
+  }
   const [recipient] = await db
     .select({ contactId: campaignRecipients.contactId })
     .from(campaignRecipients)

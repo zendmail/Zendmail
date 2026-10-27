@@ -57,6 +57,24 @@ export async function updateWorkspaceSettingsAction(
   return { success: "Settings saved." };
 }
 
+const postalAddressSchema = z.object({
+  postalAddress: z.string().trim().min(10, "Enter your full postal address (street, city, country).").max(300, "That address is too long."),
+});
+
+export async function updatePostalAddressAction(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const { userId, workspace } = await requireWorkspace();
+  const parsed = postalAddressSchema.safeParse({ postalAddress: formData.get("postalAddress") });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Enter a valid address." };
+
+  await db.update(workspaces).set({ postalAddress: parsed.data.postalAddress, updatedAt: new Date() }).where(eq(workspaces.id, workspace.id));
+  await recordAuditLog({ action: "workspace.postal_address_updated", userId, workspaceId: workspace.id });
+  revalidatePath("/workspace/settings");
+  return { success: "Postal address saved." };
+}
+
 const frequencySchema = z.object({
   maxEmailsPerContactPerWeek: z.coerce.number().int().min(1, "Must be at least 1").max(50, "That's a lot — double check this number"),
 });

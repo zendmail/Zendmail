@@ -10,7 +10,7 @@ import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
 import { audienceSchema, contentSchema, testEmailSchema, scheduleSchema } from "@/lib/validation/campaigns";
 import { dispatchCampaign } from "@/lib/campaigns";
-import { emailFooterAddress } from "@/lib/legal";
+import { senderPostalAddress } from "@/lib/legal";
 import { renderBlocksToHtml, renderBlocksToText, createDefaultBlock } from "@/lib/email-blocks";
 import { applyMergeTags, buildVars } from "@/lib/email-builder/merge";
 import { canUseTemplate } from "@/lib/template-access";
@@ -365,7 +365,7 @@ export async function sendTestEmailAction(_prev: TestEmailState, formData: FormD
 
   const blocks = campaign.blocks as EmailBlock[];
   const vars = buildVars({ firstName: "Alex", lastName: "Morgan", email: parsed.data.email, businessName: workspace.name, unsubscribeUrl: "#" });
-  const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText, postalAddress: emailFooterAddress() };
+  const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText, postalAddress: senderPostalAddress(workspace.postalAddress) };
   try {
     await sendCampaignEmail({
       workspaceId: workspace.id,

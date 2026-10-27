@@ -3,7 +3,7 @@ import { and, eq, desc, sql, lte, gte } from "drizzle-orm";
 import { db } from "@/db/client";
 import { campaigns, campaignRecipients, contacts, suppressionEntries, segments, segmentRules, workspaces, type EmailBlock } from "@/db/schema";
 import { buildSegmentCondition, type RuleInput } from "./segments";
-import { emailFooterAddress } from "./legal";
+import { senderPostalAddress } from "./legal";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { sendCampaignEmail } from "./email";
 import { buildVars, applyMergeTags } from "./email-builder/merge";
@@ -189,7 +189,7 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
   });
 
   const blocks = campaign.blocks as EmailBlock[];
-  const [workspaceRow] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
+  const [workspaceRow] = await db.select({ name: workspaces.name, postalAddress: workspaces.postalAddress }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
 
   let failed = 0;
   for (const contact of audience) {
@@ -208,7 +208,7 @@ export async function dispatchCampaign(workspaceId: string, campaignId: string, 
       businessName: workspaceRow?.name,
       unsubscribeUrl,
     });
-    const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText, postalAddress: emailFooterAddress() };
+    const renderOptions = { theme: campaign.theme, vars, preheader: campaign.previewText, postalAddress: senderPostalAddress(workspaceRow?.postalAddress) };
     const html = renderBlocksToHtml(blocks, tracking, renderOptions);
     const text = renderBlocksToText(blocks, tracking, renderOptions);
 

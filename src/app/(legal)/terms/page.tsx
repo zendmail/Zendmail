@@ -67,7 +67,7 @@ export default function TermsPage() {
 
       <h2>10. Disclaimers and liability</h2>
       <p>
-        The service is provided "as is" without warranties to the fullest extent permitted by law. To the fullest extent permitted by law,
+        The service is provided &quot;as is&quot; without warranties to the fullest extent permitted by law. To the fullest extent permitted by law,
         our total liability for any claim relating to the service is limited to the fees you paid in the 12 months before the claim, and we
         are not liable for indirect or consequential losses. Nothing limits liability that cannot be limited by law.
       </p>

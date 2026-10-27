@@ -40,7 +40,7 @@ export default function AcceptableUsePage() {
       <h2>5. Prohibited content and conduct</h2>
       <ul>
         <li>Spam, phishing, deceptive or misleading content, impersonation or malware.</li>
-        <li>Illegal goods or services, or content that infringes others' rights.</li>
+        <li>Illegal goods or services, or content that infringes others&apos; rights.</li>
         <li>Sending from a domain you do not control, or falsifying headers.</li>
         <li>Attempts to bypass limits, probe or disrupt the service.</li>
       </ul>

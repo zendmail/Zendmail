@@ -13,9 +13,15 @@ export const legal = {
 };
 
 /**
- * Postal address printed in the footer of every marketing email sent through the platform.
- * Returns undefined until a real address is configured, so a [placeholder] is never emailed.
+ * Postal address for a marketing email: the sending business's own address when it has saved one
+ * (that is whose address the law requires), otherwise the platform's. Undefined when neither is set,
+ * so a [placeholder] is never emailed.
  */
+export function senderPostalAddress(workspaceAddress?: string | null): string | undefined {
+  const own = workspaceAddress?.trim();
+  return own || emailFooterAddress();
+}
+
 export function emailFooterAddress(): string | undefined {
   const address = process.env.LEGAL_ADDRESS?.trim();
   if (!address) return undefined;

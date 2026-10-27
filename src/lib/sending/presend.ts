@@ -1,7 +1,8 @@
 import "server-only";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { campaigns, workspaceMembers, sendingDomains } from "@/db/schema";
+import { campaigns, workspaceMembers, sendingDomains, workspaces } from "@/db/schema";
+import { senderPostalAddress } from "@/lib/legal";
 import { MANAGED_DOMAINS } from "@/lib/email";
 import { countSendableAudience } from "@/lib/campaigns";
 import { listSenderCandidates, getSendingHealth } from "./domains";
@@ -34,9 +35,13 @@ export async function runPreSendChecks(workspaceId: string, campaign: CampaignFo
       ),
   ]);
 
+  const [workspaceRow] = await db.select({ postalAddress: workspaces.postalAddress }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
+  const hasPostalAddress = Boolean(senderPostalAddress(workspaceRow?.postalAddress));
+
   const sender = decideSender({ workspaceId, fromEmail: campaign.fromEmail, identities, managedDomains: MANAGED_DOMAINS });
 
   return evaluatePreSend({
+    hasPostalAddress,
     sender,
     replyTo: campaign.replyTo,
     dmarc: domainRow ? { status: domainRow.dmarcStatus, policy: domainRow.dmarcPolicy } : null,

@@ -14,7 +14,9 @@ import {
   suppressionEntries,
   type AutomationStepConfig,
 } from "@/db/schema";
-import { emailFooterAddress } from "./legal";
+import { senderPostalAddress } from "./legal";
+import { contactUnsubscribeToken } from "./unsubscribe-token";
+import { appUrl } from "./app-url";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { applyMergeTags, buildVars } from "./email-builder/merge";
 import { sendCampaignEmail } from "./email";
@@ -191,9 +193,10 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
       // Brand the email with the workspace's default verified identity when it has one; otherwise
       // fall back to the Zendmail-managed sender (never an unverified address).
       const defaultSender = await getDefaultSender(contact.workspaceId);
-      const [workspaceRow] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, contact.workspaceId)).limit(1);
-      const vars = buildVars({ firstName: contact.firstName, lastName: contact.lastName, email: contact.email, businessName: workspaceRow?.name });
-      const renderOptions = { theme: template.theme, vars, preheader: template.previewText, postalAddress: emailFooterAddress() };
+      const [workspaceRow] = await db.select({ name: workspaces.name, postalAddress: workspaces.postalAddress }).from(workspaces).where(eq(workspaces.id, contact.workspaceId)).limit(1);
+      const unsubscribeUrl = appUrl(`/api/t/unsubscribe/${contactUnsubscribeToken(contact.id)}`);
+      const vars = buildVars({ firstName: contact.firstName, lastName: contact.lastName, email: contact.email, businessName: workspaceRow?.name, unsubscribeUrl });
+      const renderOptions = { theme: template.theme, vars, preheader: template.previewText, postalAddress: senderPostalAddress(workspaceRow?.postalAddress) };
       await sendCampaignEmail({
         workspaceId: contact.workspaceId,
         source: "AUTOMATION",
@@ -204,6 +207,7 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
         subject: applyMergeTags(template.subject ?? "", vars, "text"),
         html: renderBlocksToHtml(blocks, null, renderOptions),
         text: renderBlocksToText(blocks, null, renderOptions),
+        unsubscribeUrl,
       });
       return;
     }

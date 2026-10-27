@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
-import { Gauge, HeartHandshake } from "lucide-react";
+import { Gauge, HeartHandshake, MapPin } from "lucide-react";
 import { and, eq, sql } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { WorkspaceSettingsForm } from "@/components/workspace/workspace-settings-form";
+import { PostalAddressForm } from "@/components/workspace/postal-address-form";
 import { FrequencyGuardForm } from "@/components/workspace/frequency-guard-form";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
@@ -50,6 +51,24 @@ export default async function WorkspaceSettingsPage() {
               timezone: workspace.timezone,
             }}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin size={16} className="text-primary" />
+              Postal address for emails
+            </CardTitle>
+            <CardDescription>
+              Anti-spam laws (CAN-SPAM, GDPR/ePrivacy) and Gmail/Yahoo expect a real physical address of the sender in
+              every marketing email. This address is printed at the bottom of every campaign and automation email.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <PostalAddressForm currentValue={workspace.postalAddress} />
         </CardContent>
       </Card>
 

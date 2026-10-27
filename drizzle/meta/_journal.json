@@ -99,6 +99,13 @@
       "when": 1793046850945,
       "tag": "0013_product_images",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793102666021,
+      "tag": "0014_workspace_postal_address",
+      "breakpoints": true
     }
   ]
 }

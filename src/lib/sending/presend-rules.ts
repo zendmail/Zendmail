@@ -36,6 +36,8 @@ export type PreSendInput = {
   concurrentCampaigns: number;
   /** Whether the acting member may send on behalf of this workspace. */
   memberMaySend: boolean;
+  /** Whether a physical postal address will be printed in the email footer. Omitted = assume yes. */
+  hasPostalAddress?: boolean;
 };
 
 export type PreSendReport = { canSend: boolean; checks: CheckResult[]; blockers: CheckResult[] };
@@ -165,6 +167,18 @@ export function evaluatePreSend(input: PreSendInput): PreSendReport {
         : "No suppressed addresses in this audience.",
     blocking: false,
   });
+  checks.push(
+    input.hasPostalAddress === false
+      ? {
+          key: "postal_address",
+          label: "Postal address in footer",
+          status: "FAIL",
+          detail: "Marketing email must include your physical postal address, and none is set.",
+          resolution: "Add your business postal address under Workspace → Settings.",
+          blocking: true,
+        }
+      : { key: "postal_address", label: "Postal address in footer", status: "PASS", detail: "Your postal address is printed at the bottom of every email.", blocking: false }
+  );
   checks.push({
     key: "unsubscribe",
     label: "Unsubscribe mechanism",
