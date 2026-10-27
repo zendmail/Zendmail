@@ -26,7 +26,12 @@ export function AuthCard({
         </div>
 
         {footer && <div className="mt-5 text-center text-[13.5px] text-text-secondary">{footer}</div>}
-        <p className="mt-6 text-center text-[11.5px] text-text-tertiary">Powered by Zoraak Technologies</p>
+        <nav aria-label="Legal" className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11.5px] text-text-tertiary">
+          <Link href="/privacy" className="hover:text-text-secondary hover:underline">Privacy</Link>
+          <Link href="/terms" className="hover:text-text-secondary hover:underline">Terms</Link>
+          <Link href="/acceptable-use" className="hover:text-text-secondary hover:underline">Anti-spam</Link>
+        </nav>
+        <p className="mt-2 text-center text-[11.5px] text-text-tertiary">Powered by Zoraak Technologies</p>
       </div>
     </div>
   );
