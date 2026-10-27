@@ -135,6 +135,9 @@ export const templateCategory = pgEnum("template_category", [
   "SALE",
   "THANK_YOU",
   "CUSTOM",
+  "SEASONAL",
+  "DIGITAL_PRODUCT",
+  "SERVICE",
 ]);
 
 export const emailTemplates = pgTable(

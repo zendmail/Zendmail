@@ -42,6 +42,9 @@ const TEMPLATE_CATEGORY_LABEL: Record<string, string> = {
   PRODUCT_LAUNCH: "Product launch",
   SALE: "Sale",
   THANK_YOU: "Thank you",
+  SEASONAL: "Seasonal & festival",
+  DIGITAL_PRODUCT: "Digital products",
+  SERVICE: "Service & SaaS",
   CUSTOM: "Custom",
 };
 

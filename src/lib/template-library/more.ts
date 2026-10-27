@@ -22,7 +22,7 @@ const sand = theme({ primary: "#A16207", secondary: "#292524", accent: "#65A30D"
 // --- FREE ---------------------------------------------------------------------------------------
 export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
   {
-    key: "seasonal-black-friday", name: "Black Friday — Doorbuster", category: "SALE", tier: "FREE", sortOrder: 300, theme: noir,
+    key: "seasonal-black-friday", name: "Black Friday — Doorbuster", category: "SEASONAL", tier: "FREE", sortOrder: 300, theme: noir,
     description: "Dark, high-contrast sale hero, big code box and a three-product shortlist.",
     subject: "Black Friday starts now — up to 60% off", previewText: "The biggest savings of the year. While stock lasts.",
     blocks: [
@@ -39,7 +39,7 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "seasonal-diwali", name: "Festival of Lights — Greeting + Offer", category: "PROMOTIONAL", tier: "FREE", sortOrder: 310, theme: diya,
+    key: "seasonal-diwali", name: "Festival of Lights — Greeting + Offer", category: "SEASONAL", tier: "FREE", sortOrder: 310, theme: diya,
     description: "Warm festive greeting with a gifting offer and three gift ideas. Works for any festival of lights.",
     subject: "Wishing you a bright, joyful festival ✨", previewText: "A little gift from us: festive savings inside.",
     blocks: [
@@ -56,7 +56,7 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "seasonal-eid", name: "Eid & Ramadan — Warm Wishes", category: "PROMOTIONAL", tier: "FREE", sortOrder: 320, theme: crescent,
+    key: "seasonal-eid", name: "Eid & Ramadan — Warm Wishes", category: "SEASONAL", tier: "FREE", sortOrder: 320, theme: crescent,
     description: "Calm, elegant greeting with a gift offer and a charity-giving callout.",
     subject: "Eid Mubarak from all of us", previewText: "Celebrate with something special — an Eid offer inside.",
     blocks: [
@@ -72,7 +72,7 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "seasonal-holiday-gifts", name: "Holiday Gift Guide", category: "PROMOTIONAL", tier: "FREE", sortOrder: 330, theme: evergreen,
+    key: "seasonal-holiday-gifts", name: "Holiday Gift Guide", category: "SEASONAL", tier: "FREE", sortOrder: 330, theme: evergreen,
     description: "Gift guide by recipient, delivery cut-off reminder and a gift-card callout.",
     subject: "Our holiday gift guide is here 🎁", previewText: "Find the perfect gift for everyone on your list.",
     blocks: [
@@ -134,7 +134,7 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "digital-ebook-launch", name: "Digital Product — Ebook Launch", category: "PRODUCT_LAUNCH", tier: "FREE", sortOrder: 370, theme: paper,
+    key: "digital-ebook-launch", name: "Digital Product — Ebook Launch", category: "DIGITAL_PRODUCT", tier: "FREE", sortOrder: 370, theme: paper,
     description: "Launch email for an ebook, template pack or guide: what's inside, who it's for and an early-bird price.",
     subject: "New: {{business_name}} guide is out now", previewText: "Instant download. Early-bird price for the first 48 hours.",
     blocks: [
@@ -154,7 +154,7 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
 // --- PRO ----------------------------------------------------------------------------------------
 export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
   {
-    key: "pro-black-friday-countdown", name: "Black Friday — Early Access", category: "SALE", tier: "PRO", sortOrder: 400, theme: noir,
+    key: "pro-black-friday-countdown", name: "Black Friday — Early Access", category: "SEASONAL", tier: "PRO", sortOrder: 400, theme: noir,
     description: "VIP early-access teaser with a countdown-style timeline, tiered offers and loyalty perks.",
     subject: "VIP early access: Black Friday starts for you today", previewText: "You're on the list. Shop 24 hours before everyone else.",
     blocks: [
@@ -176,7 +176,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-festive-premium", name: "Festival of Lights — Premium", category: "PROMOTIONAL", tier: "PRO", sortOrder: 410, theme: diya,
+    key: "pro-festive-premium", name: "Festival of Lights — Premium", category: "SEASONAL", tier: "PRO", sortOrder: 410, theme: diya,
     description: "Rich festive layout with a story hero, gift hampers, a countdown to last order date and a thank-you message.",
     subject: "Light up the season with {{business_name}}", previewText: "Festive hampers, handpicked for you.",
     blocks: [
@@ -193,7 +193,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-eid-collection", name: "Eid — The Collection", category: "PROMOTIONAL", tier: "PRO", sortOrder: 420, theme: crescent,
+    key: "pro-eid-collection", name: "Eid — The Collection", category: "SEASONAL", tier: "PRO", sortOrder: 420, theme: crescent,
     description: "Elegant collection launch: hero, three curated edits, a giving-back story and gift-card option.",
     subject: "The Eid collection has arrived", previewText: "Elegant pieces for gathering, gifting and giving.",
     blocks: [
@@ -210,7 +210,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-holiday-countdown", name: "Holiday — 12 Days of Deals", category: "SALE", tier: "PRO", sortOrder: 430, theme: evergreen,
+    key: "pro-holiday-countdown", name: "Holiday — 12 Days of Deals", category: "SEASONAL", tier: "PRO", sortOrder: 430, theme: evergreen,
     description: "Advent-style daily deals email with a featured deal, a week-at-a-glance list and free-shipping bar.",
     subject: "Day 1 of 12: today's deal is inside", previewText: "A new deal every day until the holidays.",
     blocks: [
@@ -227,7 +227,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-digital-course-launch", name: "Digital Product — Course Launch", category: "PRODUCT_LAUNCH", tier: "PRO", sortOrder: 440, theme: ink,
+    key: "pro-digital-course-launch", name: "Digital Product — Course Launch", category: "DIGITAL_PRODUCT", tier: "PRO", sortOrder: 440, theme: ink,
     description: "Long-form launch: promise, curriculum, instructor story, testimonials, bonuses and an enrol deadline.",
     subject: "Enrolment is open: {{business_name}} Masterclass", previewText: "Learn at your own pace. 30-day money-back guarantee.",
     blocks: [
@@ -249,7 +249,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-digital-download-ready", name: "Digital Product — Your Download Is Ready", category: "POST_PURCHASE", tier: "PRO", sortOrder: 450, theme: paper,
+    key: "pro-digital-download-ready", name: "Digital Product — Your Download Is Ready", category: "DIGITAL_PRODUCT", tier: "PRO", sortOrder: 450, theme: paper,
     description: "Delivery email with a prominent download button, getting-started steps, support links and a cross-sell.",
     subject: "Your download is ready 🎉", previewText: "Everything you need to get started is inside.",
     blocks: [
@@ -269,7 +269,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-course-welcome", name: "Digital Product — Course Welcome", category: "WELCOME", tier: "PRO", sortOrder: 460, theme: studio,
+    key: "pro-course-welcome", name: "Digital Product — Course Welcome", category: "DIGITAL_PRODUCT", tier: "PRO", sortOrder: 460, theme: studio,
     description: "Warm onboarding for new students: first lesson, a week-one plan, community and support.",
     subject: "Welcome aboard, {{first_name|friend}} — your first lesson is waiting", previewText: "Here's how to get the most from week one.",
     blocks: [
@@ -376,7 +376,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-saas-trial-ending", name: "SaaS — Trial Ending Soon", category: "WIN_BACK", tier: "PRO", sortOrder: 520, theme: ink,
+    key: "pro-saas-trial-ending", name: "SaaS — Trial Ending Soon", category: "SERVICE", tier: "PRO", sortOrder: 520, theme: ink,
     description: "Trial-expiry nudge: usage recap, what they'll lose, plan highlights and a clear upgrade path.",
     subject: "Your trial ends in 3 days", previewText: "Keep everything you've built. Upgrade in one click.",
     blocks: [
@@ -397,7 +397,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-product-update", name: "SaaS — What's New", category: "PRODUCT_LAUNCH", tier: "PRO", sortOrder: 530, theme: studio,
+    key: "pro-product-update", name: "SaaS — What's New", category: "SERVICE", tier: "PRO", sortOrder: 530, theme: studio,
     description: "Release notes email: headline feature, three smaller improvements, a changelog link and a feedback ask.",
     subject: "What's new this month at {{business_name}}", previewText: "A big new feature and three small wins.",
     blocks: [
@@ -413,7 +413,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-invoice-receipt", name: "Receipt — Thanks for Your Order", category: "POST_PURCHASE", tier: "PRO", sortOrder: 540, theme: paper,
+    key: "pro-invoice-receipt", name: "Receipt — Thanks for Your Order", category: "SERVICE", tier: "PRO", sortOrder: 540, theme: paper,
     description: "Clean transactional receipt layout with order details, delivery info and support links.",
     subject: "Your receipt from {{business_name}}", previewText: "Order confirmed. Here are the details.",
     blocks: [
@@ -431,7 +431,7 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-booking-reminder", name: "Booking Reminder — See You Soon", category: "POST_PURCHASE", tier: "PRO", sortOrder: 550, theme: studio,
+    key: "pro-booking-reminder", name: "Booking Reminder — See You Soon", category: "SERVICE", tier: "PRO", sortOrder: 550, theme: studio,
     description: "Appointment reminder with date, place and what to bring, plus reschedule and directions buttons.",
     subject: "Reminder: your appointment is tomorrow", previewText: "We're looking forward to seeing you.",
     blocks: [

@@ -19,6 +19,9 @@ export const templateCategories = [
   { value: "PRODUCT_LAUNCH", label: "Product launch", image: "photo-1526170375885-4d8ecf77b99f" },
   { value: "SALE", label: "Sale", image: "photo-1490481651871-ab68de25d43d" },
   { value: "THANK_YOU", label: "Thank you", image: "photo-1513201099705-a9746e1e201f" },
+  { value: "SEASONAL", label: "Seasonal & festival", image: "photo-1513201099705-a9746e1e201f" },
+  { value: "DIGITAL_PRODUCT", label: "Digital products", image: "photo-1498050108023-c5249f4df085" },
+  { value: "SERVICE", label: "Service & SaaS", image: "photo-1497366216548-37526070297c" },
 ] as const;
 
 export const categoryLabels: Record<string, string> = Object.fromEntries(
@@ -44,6 +47,9 @@ const categoryPreviewCopy: Record<string, { headline: string; supportingText: st
   PRODUCT_LAUNCH: { headline: "Introducing our newest product", supportingText: "Smarter. Faster. Better.", buttonLabel: "Learn More" },
   SALE: { headline: "Big Sale", supportingText: "Up to 50% off.", buttonLabel: "Shop Now" },
   THANK_YOU: { headline: "Thank You!", supportingText: "For being a valued customer.", buttonLabel: "Shop Again" },
+  SEASONAL: { headline: "Season's Greetings", supportingText: "Celebrate with a special offer.", buttonLabel: "Shop the Offer" },
+  DIGITAL_PRODUCT: { headline: "Your download is ready", supportingText: "Get started in minutes.", buttonLabel: "Download Now" },
+  SERVICE: { headline: "Your booking is confirmed", supportingText: "We look forward to seeing you.", buttonLabel: "View Details" },
 };
 
 export function getTemplateHeading(template: Template) {

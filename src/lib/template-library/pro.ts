@@ -119,7 +119,7 @@ export const PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "care-service-intro", name: "Service Welcome — Safety & Steps", category: "WELCOME", tier: "PRO", sortOrder: 170, theme: care,
+    key: "care-service-intro", name: "Service Welcome — Safety & Steps", category: "SERVICE", tier: "PRO", sortOrder: 170, theme: care,
     description: "Trust-building welcome for service businesses: safety checklist and how-it-works steps.",
     subject: "Welcome — here's how it works", previewText: "Care that comes to you.",
     blocks: [
@@ -141,7 +141,7 @@ export const PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "appointment-confirmation", name: "Appointment Confirmation", category: "POST_PURCHASE", tier: "PRO", sortOrder: 180, theme: care,
+    key: "appointment-confirmation", name: "Appointment Confirmation", category: "SERVICE", tier: "PRO", sortOrder: 180, theme: care,
     description: "Clear booking details, preparation checklist, intake-form callout and cancellation policy.",
     subject: "Your appointment is confirmed", previewText: "Date, time and everything to prepare.",
     blocks: [
@@ -197,7 +197,7 @@ export const PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "saas-onboarding", name: "SaaS Onboarding — Get Started", category: "WELCOME", tier: "PRO", sortOrder: 210, theme: violet,
+    key: "saas-onboarding", name: "SaaS Onboarding — Get Started", category: "SERVICE", tier: "PRO", sortOrder: 210, theme: violet,
     description: "Product-led welcome: dashboard hero, four action cards with icons and a help-center callout.",
     subject: "Welcome to {{business_name}} — let's get you set up", previewText: "Four quick things to do first.",
     blocks: [
