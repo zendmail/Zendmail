@@ -9,7 +9,8 @@ import { mk, standardFooter, theme, URL_PLACEHOLDER as U, type TemplateDefinitio
 
 // --- palettes -----------------------------------------------------------------------------------
 const noir = theme({ primary: "#F5B301", secondary: "#0B0B0F", accent: "#F5B301", bg: "#16161D", surface: "#1F1F29", text: "#F4F4F6", muted: "#A3A3B5", headingFont: "display", bodyFont: "sans", button: "square" });
-const diya = theme({ primary: "#D9480F", secondary: "#3D0E00", accent: "#FFC53D", bg: "#FFF0DC", text: "#3D0E00", muted: "#8A5A3C", headingFont: "editorial", bodyFont: "sans", button: "pill" });
+const festive = theme({ primary: "#C2410C", secondary: "#3B1308", accent: "#FBBF24", bg: "#FFF1E0", text: "#3B1308", muted: "#8A5A3C", headingFont: "editorial", bodyFont: "sans", button: "pill" });
+const sunny = theme({ primary: "#0891B2", secondary: "#083344", accent: "#FBBF24", bg: "#E0F7FA", text: "#083344", muted: "#4D7C8A", headingFont: "rounded", bodyFont: "rounded", button: "pill" });
 const crescent = theme({ primary: "#0F766E", secondary: "#042F2E", accent: "#E9C46A", bg: "#E7F3F0", text: "#042F2E", muted: "#4C7A75", headingFont: "editorial", bodyFont: "sans", button: "pill" });
 const evergreen = theme({ primary: "#B91C1C", secondary: "#14352A", accent: "#D4A93A", bg: "#EAF2EC", text: "#14352A", muted: "#587566", headingFont: "editorial", bodyFont: "sans", button: "rounded" });
 const confetti = theme({ primary: "#7C3AED", secondary: "#2E1065", accent: "#FB7185", bg: "#F3EBFF", text: "#2E1065", muted: "#6D5C99", headingFont: "rounded", bodyFont: "rounded", button: "pill" });
@@ -39,14 +40,14 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "seasonal-diwali", name: "Festival of Lights — Greeting + Offer", category: "SEASONAL", tier: "FREE", sortOrder: 310, theme: diya,
-    description: "Warm festive greeting with a gifting offer and three gift ideas. Works for any festival of lights.",
-    subject: "Wishing you a bright, joyful festival ✨", previewText: "A little gift from us: festive savings inside.",
+    key: "seasonal-festive-greeting", name: "Season's Greetings — Whatever You Celebrate", category: "SEASONAL", tier: "FREE", sortOrder: 310, theme: festive,
+    description: "Warm, inclusive greeting for any celebration, with a thank-you offer and three gift ideas. Edit the wording for your occasion.",
+    subject: "Warm wishes from all of us at {{business_name}}", previewText: "A little thank-you for the season, inside.",
     blocks: [
       mk("header", { brand: "{{business_name}}", links: [] }),
-      mk("hero", { eyebrow: "Happy festival", headline: "May your home glow with [[joy]]", text: "From all of us at {{business_name}}, warm wishes to you and your family. Celebrate with 20% off gifts for everyone you love.", imageUrl: art("people"), imagePosition: "bottom", buttonLabel: "Shop festive gifts", buttonUrl: U, bg: "@primary", accent: "@accent" }),
+      mk("hero", { eyebrow: "Season's greetings", headline: "Wishing you [[joy]] and good times", text: "Whatever you're celebrating, we hope it's full of warmth and the people you love. Here's a small thank-you from our team.", imageUrl: art("people"), imagePosition: "bottom", buttonLabel: "Shop gifts", buttonUrl: U, bg: "@primary", accent: "@accent" }),
       mk("wave", { shape: "scallop", top: "@primary", bottom: "@surface", height: 44 }),
-      mk("coupon", { eyebrow: "Festive offer", headline: "20% OFF", text: "On all gift sets, this week only.", code: "FESTIVE20", bg: "@primarySoft", color: "@text", accent: "@primary" }),
+      mk("coupon", { eyebrow: "Our thank-you", headline: "20% OFF", text: "On gift sets, for a limited time.", code: "THANKS20", bg: "@primarySoft", color: "@text", accent: "@primary" }),
       mk("cards", { heading: "Gift ideas", columns: 3, boxed: false, bg: "@surface", color: "@text", accent: "@primary", items: [
         { imageUrl: art("box"), title: "For family", text: "Curated sets everyone enjoys.", buttonLabel: "Shop", buttonUrl: U },
         { imageUrl: art("jar"), title: "For friends", text: "Small treats, big smiles.", buttonLabel: "Shop", buttonUrl: U },
@@ -56,18 +57,35 @@ export const MORE_FREE_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "seasonal-eid", name: "Eid & Ramadan — Warm Wishes", category: "SEASONAL", tier: "FREE", sortOrder: 320, theme: crescent,
-    description: "Calm, elegant greeting with a gift offer and a charity-giving callout.",
-    subject: "Eid Mubarak from all of us", previewText: "Celebrate with something special — an Eid offer inside.",
+    key: "seasonal-new-year", name: "New Year — Fresh Start", category: "SEASONAL", tier: "FREE", sortOrder: 320, theme: crescent,
+    description: "Optimistic start-of-year email with a resolution-style checklist and a fresh-start offer.",
+    subject: "A fresh start, on us", previewText: "New year, new goals — and a little help getting going.",
     blocks: [
       mk("header", { brand: "{{business_name}}", links: [] }),
-      mk("hero", { eyebrow: "Eid Mubarak", headline: "Blessings, joy and [[togetherness]]", text: "Wishing you and your loved ones a beautiful Eid. Enjoy a special thank-you from our team.", imageUrl: art("basket"), imagePosition: "bottom", buttonLabel: "See the Eid collection", buttonUrl: U, bg: "@primarySoft", color: "@text", accent: "@primary" }),
-      mk("coupon", { headline: "Eid gift: 15% OFF", text: "Use this code on your order. Valid for one week.", code: "EID15", bg: "@surface", color: "@text", accent: "@primary" }),
-      mk("list", { heading: "Make it extra special", style: "icons", boxed: false, bg: "@surface", accent: "@primary", items: [
-        { icon: "gift", title: "Free gift wrapping", text: "On every order this week." },
-        { icon: "truck", title: "Fast delivery", text: "Order early to receive it in time." },
-        { icon: "heart", title: "Giving back", text: "A share of every order supports local charities." },
+      mk("hero", { eyebrow: "New year", headline: "Make this year your [[best]] yet", text: "Thank you for being with us. Here's to new goals, small wins and a great year ahead.", imageUrl: art("photo"), imagePosition: "bottom", buttonLabel: "Start fresh", buttonUrl: U, bg: "@primarySoft", color: "@text", accent: "@primary" }),
+      mk("coupon", { headline: "New-year offer: 15% OFF", text: "Use this code on your first order of the year.", code: "FRESH15", bg: "@surface", color: "@text", accent: "@primary" }),
+      mk("list", { heading: "Three ways to start strong", style: "icons", boxed: false, bg: "@surface", accent: "@primary", items: [
+        { icon: "target", title: "Set one clear goal", text: "Small and specific beats big and vague." },
+        { icon: "calendar", title: "Plan your first month", text: "Put it in your calendar today." },
+        { icon: "sparkles", title: "Treat yourself", text: "You've earned a head start." },
       ] }),
+      ...standardFooter(),
+    ],
+  },
+  {
+    key: "seasonal-summer-sale", name: "Summer Sale — Sunny Savings", category: "SEASONAL", tier: "FREE", sortOrder: 325, theme: sunny,
+    description: "Bright seasonal sale with a big discount badge, product row and a free-shipping bar. Swap the season in the copy.",
+    subject: "The summer sale is on ☀️", previewText: "Up to 40% off seasonal favourites.",
+    blocks: [
+      mk("header", { brand: "{{business_name}}", links: [] }),
+      mk("hero", { eyebrow: "Seasonal sale", headline: "Up to [[40% off]] this season", text: "Fresh finds at sunny prices. Limited stock, so don't wait.", imageUrl: art("water"), imagePosition: "bottom", buttonLabel: "Shop the sale", buttonUrl: U, bg: "@primary", accent: "@accent" }),
+      mk("wave", { shape: "wave", top: "@primary", bottom: "@surface", height: 50 }),
+      mk("cards", { heading: "Seasonal favourites", columns: 3, boxed: false, bg: "@surface", accent: "@primary", items: [
+        { imageUrl: art("bottle"), badge: "-40%", title: "Top pick", price: "$18", buttonLabel: "Shop", buttonUrl: U },
+        { imageUrl: art("tube"), badge: "-30%", title: "Everyday", price: "$12", buttonLabel: "Shop", buttonUrl: U },
+        { imageUrl: art("jar"), badge: "-35%", title: "Bundle", price: "$26", buttonLabel: "Shop", buttonUrl: U },
+      ] }),
+      mk("callout", { icon: "truck", headline: "Free shipping over $50", text: "Plus easy 30-day returns.", bg: "@secondary", sectionBg: "@surface" }),
       ...standardFooter(),
     ],
   },
@@ -176,37 +194,58 @@ export const MORE_PRO_TEMPLATES: TemplateDefinition[] = [
     ],
   },
   {
-    key: "pro-festive-premium", name: "Festival of Lights — Premium", category: "SEASONAL", tier: "PRO", sortOrder: 410, theme: diya,
-    description: "Rich festive layout with a story hero, gift hampers, a countdown to last order date and a thank-you message.",
-    subject: "Light up the season with {{business_name}}", previewText: "Festive hampers, handpicked for you.",
+    key: "pro-celebration-gifting", name: "Celebration Gifting — Premium Hampers", category: "SEASONAL", tier: "PRO", sortOrder: 410, theme: festive,
+    description: "Premium gifting layout for any celebration: story hero, two hampers, corporate gifting and a last-order-date bar.",
+    subject: "Gifts worth giving, from {{business_name}}", previewText: "Beautifully packed hampers, delivered with care.",
     blocks: [
-      mk("header", { brand: "{{business_name}}", links: [{ label: "Hampers", url: U }, { label: "Sweets & treats", url: U }, { label: "Gifting", url: U }], bg: "@secondary", color: "#FFFFFF" }),
-      mk("hero", { eyebrow: "The festive edit", headline: "Gifts that make every home [[sparkle]]", text: "Handpicked hampers, thoughtfully packed and delivered with care.", imageUrl: art("box", { c1: "@accent", c2: "@primary", c3: "#FFFFFF" }), imagePosition: "bottom", buttonLabel: "Explore hampers", buttonUrl: U, bg: "@primary", accent: "@accent" }),
+      mk("header", { brand: "{{business_name}}", links: [{ label: "Hampers", url: U }, { label: "Gifting", url: U }, { label: "Corporate", url: U }], bg: "@secondary", color: "#FFFFFF" }),
+      mk("hero", { eyebrow: "The gifting edit", headline: "Gifts that make every moment [[special]]", text: "Handpicked hampers, thoughtfully packed and delivered with care.", imageUrl: art("box", { c1: "@accent", c2: "@primary", c3: "#FFFFFF" }), imagePosition: "bottom", buttonLabel: "Explore hampers", buttonUrl: U, bg: "@primary", accent: "@accent" }),
       mk("wave", { shape: "scallop", top: "@primary", bottom: "@surface", height: 50 }),
-      mk("cards", { heading: "Festive hampers", subheading: "Packed with love, ready to gift", columns: 2, boxed: true, bg: "@surface", accent: "@primary", cardBg: "@primarySoft", items: [
-        { imageUrl: art("basket"), badge: "Popular", title: "The Family Hamper", text: "Sweets, snacks and surprises for the whole family.", price: "$49", buttonLabel: "Order now", buttonUrl: U },
-        { imageUrl: art("box"), badge: "New", title: "The Luxe Collection", text: "Premium treats in a keepsake box.", price: "$89", buttonLabel: "Order now", buttonUrl: U },
+      mk("cards", { heading: "Signature hampers", subheading: "Packed with love, ready to gift", columns: 2, boxed: true, bg: "@surface", accent: "@primary", cardBg: "@primarySoft", items: [
+        { imageUrl: art("basket"), badge: "Popular", title: "The Family Hamper", text: "Treats and surprises for the whole family.", price: "$49", buttonLabel: "Order now", buttonUrl: U },
+        { imageUrl: art("box"), badge: "New", title: "The Luxe Collection", text: "Premium picks in a keepsake box.", price: "$89", buttonLabel: "Order now", buttonUrl: U },
       ] }),
       mk("split", { imageUrl: art("people"), imageSide: "left", eyebrow: "Corporate gifting", headline: "Thank your team and clients", text: "Custom-branded hampers with bulk pricing and doorstep delivery.", buttonLabel: "Get a quote", buttonUrl: U, bg: "@primarySoft", color: "@text", accent: "@primary" }),
-      mk("callout", { icon: "clock", headline: "Last order date: 12th for delivery in time", text: "Order early. Festive slots fill up quickly.", bg: "@secondary", sectionBg: "@surface" }),
+      mk("callout", { icon: "clock", headline: "Order early for delivery in time", text: "Gifting slots fill up quickly. Check your last order date at checkout.", bg: "@secondary", sectionBg: "@surface" }),
       ...standardFooter({ links: true }),
     ],
   },
   {
-    key: "pro-eid-collection", name: "Eid — The Collection", category: "SEASONAL", tier: "PRO", sortOrder: 420, theme: crescent,
-    description: "Elegant collection launch: hero, three curated edits, a giving-back story and gift-card option.",
-    subject: "The Eid collection has arrived", previewText: "Elegant pieces for gathering, gifting and giving.",
+    key: "pro-seasonal-collection", name: "New Season — The Collection", category: "SEASONAL", tier: "PRO", sortOrder: 420, theme: crescent,
+    description: "New-season collection launch: hero, three curated edits, a sustainability story and gift-card option.",
+    subject: "The new season collection has arrived", previewText: "Fresh pieces for the months ahead.",
     blocks: [
       mk("header", { brand: "{{business_name}}", links: [{ label: "New", url: U }, { label: "Gifts", url: U }, { label: "Sale", url: U }] }),
-      mk("hero", { eyebrow: "Eid collection", headline: "Celebrate in [[style]]", text: "New season pieces made for family gatherings, with free delivery on orders over $60.", imageUrl: art("photo"), imagePosition: "bottom", buttonLabel: "Shop the collection", buttonUrl: U, bg: "@primary", accent: "@accent" }),
+      mk("hero", { eyebrow: "New season", headline: "Meet the [[new]] collection", text: "Fresh pieces made for the season ahead, with free delivery on orders over $60.", imageUrl: art("photo"), imagePosition: "bottom", buttonLabel: "Shop the collection", buttonUrl: U, bg: "@primary", accent: "@accent" }),
       mk("cards", { heading: "Three edits", columns: 3, boxed: false, bg: "@surface", accent: "@primary", items: [
-        { imageUrl: art("bottle"), title: "For the table", text: "Host with elegance.", buttonLabel: "Explore", buttonUrl: U },
+        { imageUrl: art("bottle"), title: "For the home", text: "Make it feel new.", buttonLabel: "Explore", buttonUrl: U },
         { imageUrl: art("jar"), title: "For gifting", text: "Beautifully boxed.", buttonLabel: "Explore", buttonUrl: U },
         { imageUrl: art("tube"), title: "For you", text: "Treat yourself, too.", buttonLabel: "Explore", buttonUrl: U },
       ] }),
       mk("wave", { shape: "curve", top: "@surface", bottom: "@primarySoft", height: 50 }),
-      mk("split", { imageUrl: art("people"), imageSide: "right", eyebrow: "Giving back", headline: "Every order feeds a family", text: "For every order this month we donate a meal to a family in need. Thank you for celebrating generously.", bg: "@primarySoft", color: "@text", accent: "@primary" }),
+      mk("split", { imageUrl: art("people"), imageSide: "right", eyebrow: "Our promise", headline: "Made with care, for the long run", text: "Every piece in this collection is made to last, with responsibly sourced materials and fair-pay partners.", bg: "@primarySoft", color: "@text", accent: "@primary" }),
       ...standardFooter({ bg: "@primarySoft" }),
+    ],
+  },
+  {
+    key: "pro-mega-sale-flash", name: "Mega Sale — Flash Deals Event", category: "SEASONAL", tier: "PRO", sortOrder: 425, theme: noir,
+    description: "Global shopping-event template (11.11, Cyber Monday, anniversary sales): countdown timeline, hourly flash deals and tiered savings.",
+    subject: "Mega sale is live: flash deals every hour", previewText: "The biggest shopping event of the season. Don't miss the doorbusters.",
+    blocks: [
+      mk("header", { brand: "{{business_name}}", links: [], bg: "@secondary", color: "#FFFFFF" }),
+      mk("hero", { eyebrow: "Mega sale event", headline: "Flash deals every [[hour]]", text: "24 hours of surprise discounts across the store. Check back often. Deals change fast.", imageUrl: art("phone"), imagePosition: "top", buttonLabel: "See live deals", buttonUrl: U, bg: "@secondary", accent: "@accent" }),
+      mk("wave", { shape: "slant", top: "@secondary", bottom: "@surface", height: 56 }),
+      mk("cards", { heading: "On right now", columns: 3, boxed: true, bg: "@surface", accent: "@primary", cardBg: "@secondary", items: [
+        { imageUrl: art("bottle"), badge: "-60%", title: "Flash deal", price: "$15", buttonLabel: "Grab it", buttonUrl: U },
+        { imageUrl: art("box"), badge: "-50%", title: "Bundle", price: "$35", buttonLabel: "Grab it", buttonUrl: U },
+        { imageUrl: art("tube"), badge: "-45%", title: "Fan favourite", price: "$12", buttonLabel: "Grab it", buttonUrl: U },
+      ] }),
+      mk("list", { heading: "How the event works", style: "numbers", boxed: false, bg: "@surface", accent: "@primary", items: [
+        { title: "New deals drop every hour", text: "Stock is limited on each one." },
+        { title: "Stack savings with your code", text: "Extra discount on orders over $75." },
+        { title: "Free shipping on every order", text: "For the whole event." },
+      ] }),
+      ...standardFooter({ bg: "@secondary", iconBg: "@primary" }),
     ],
   },
   {

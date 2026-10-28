@@ -1,7 +1,10 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { emailTemplates } from "@/db/schema";
 import { TEMPLATE_LIBRARY } from "./index";
+
+/** Built-in templates that were replaced. Removed on sync; campaigns made from them keep their own copy of the content. */
+const RETIRED_TEMPLATE_KEYS = ["seasonal-diwali", "seasonal-eid", "pro-festive-premium", "pro-eid-collection"];
 
 /**
  * Installs / updates the built-in template library. Safe to run any number of times:
@@ -14,6 +17,8 @@ import { TEMPLATE_LIBRARY } from "./index";
 export async function syncBuiltInTemplates() {
   let inserted = 0;
   let updated = 0;
+
+  await db.delete(emailTemplates).where(and(isNull(emailTemplates.workspaceId), inArray(emailTemplates.key, RETIRED_TEMPLATE_KEYS)));
 
   for (const def of TEMPLATE_LIBRARY) {
     const values = {

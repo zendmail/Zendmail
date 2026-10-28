@@ -139,8 +139,8 @@ describe("free vs pro access", () => {
 
 describe("template library integrity", () => {
   it("has the advertised free / pro split and unique keys", () => {
-    expect(FREE_TEMPLATE_COUNT).toBe(17);
-    expect(PRO_TEMPLATE_COUNT).toBe(28);
+    expect(FREE_TEMPLATE_COUNT).toBe(18);
+    expect(PRO_TEMPLATE_COUNT).toBe(29);
     const keys = TEMPLATE_LIBRARY.map((t) => t.key);
     expect(new Set(keys).size).toBe(keys.length);
     expect(new Set(TEMPLATE_LIBRARY.map((t) => t.name)).size).toBe(TEMPLATE_LIBRARY.length);
