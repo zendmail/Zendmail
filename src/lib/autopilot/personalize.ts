@@ -147,7 +147,7 @@ export function personalizeTemplate(def: TemplateDefinition, ctx: { brand: Brand
           title: p.name.slice(0, 80),
           price: formatPrice(p.price, brand.currency),
           buttonLabel: label,
-          buttonUrl: url,
+          buttonUrl: p.productUrl && /^https:\/\//i.test(p.productUrl) ? p.productUrl : url,
         }));
         if (typeof b.heading === "string" && isRisky(b.heading)) b.heading = "Featured products";
         if (typeof b.subheading === "string" && isRisky(b.subheading)) delete b.subheading;

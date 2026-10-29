@@ -31,6 +31,7 @@ There is no single "run this one command and it's live" step for an app with a r
    Vercel Cron (built in) ──▶ /api/cron/process-automations       (every minute)
                           ──▶ /api/cron/send-scheduled-campaigns  (every minute)
                           ──▶ /api/cron/sync-stores               (every minute)
+                          ──▶ /api/cron/autopilot-refresh         (daily is enough; refreshes each workspace at most every 6 days)
 
    Stripe ──▶ webhook ──▶ /api/webhooks/stripe  (signature verified, idempotent)
 ```

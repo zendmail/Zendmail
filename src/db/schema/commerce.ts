@@ -56,6 +56,8 @@ export const digitalProducts = pgTable(
     price: numeric("price", { precision: 10, scale: 2 }),
     // Product photo URL from the source store (https only), null if the product has none.
     imageUrl: text("image_url"),
+    // Public product page on the source store (https only), so emails can link straight to the product. Null if the store has no public page.
+    productUrl: text("product_url"),
     // Denormalized rollups, recomputed by a real sync job — never
     // hand-edited, and left null (not zero) until a sync has actually
     // run, so the UI can tell "zero sales" apart from "never synced".

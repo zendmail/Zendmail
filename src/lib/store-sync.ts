@@ -22,6 +22,7 @@ const shopifyProductResponseSchema = z.object({
           productType: z.string().nullable(),
           updatedAt: z.string(),
           featuredImage: z.object({ url: z.string() }).nullable().optional(),
+          onlineStoreUrl: z.string().nullable().optional(),
           variants: z.object({ edges: z.array(z.object({ node: z.object({ price: z.string() }) })) }),
         }),
       })),
@@ -70,6 +71,7 @@ const wooProductSchema = z.object({
   type: z.string().optional(),
   price: z.string().optional(),
   images: z.array(z.object({ src: z.string() })).optional(),
+  permalink: z.string().optional(),
   date_modified_gmt: z.string().nullable().optional(),
 });
 
@@ -94,7 +96,7 @@ const wooOrderSchema = z.object({
 
 const shopifyProductsQuery = `query ZendmailProducts($first: Int!, $after: String, $filter: String) {
   products(first: $first, after: $after, query: $filter, sortKey: UPDATED_AT) {
-    edges { cursor node { id title productType updatedAt featuredImage { url } variants(first: 1) { edges { node { price } } } } }
+    edges { cursor node { id title productType updatedAt featuredImage { url } onlineStoreUrl variants(first: 1) { edges { node { price } } } } }
     pageInfo { hasNextPage endCursor }
   }
 }`;
@@ -182,6 +184,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
   name: string;
   price: number | null;
   imageUrl: string | null;
+  productUrl: string | null;
 }[]) {
   if (rows.length === 0) return;
   const now = new Date();
@@ -193,6 +196,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
     type: "OTHER" as const,
     price: row.price === null ? null : row.price.toFixed(2),
     imageUrl: row.imageUrl,
+    productUrl: row.productUrl,
     updatedAt: now,
   }))).onConflictDoUpdate({
     target: [digitalProducts.storeId, digitalProducts.externalId],
@@ -201,6 +205,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
       type: sql`excluded.type`,
       price: sql`excluded.price`,
       imageUrl: sql`excluded.image_url`,
+      productUrl: sql`excluded.product_url`,
       updatedAt: now,
     },
   });
@@ -260,6 +265,7 @@ async function syncShopifyProducts(store: typeof stores.$inferSelect, job: typeo
     name: node.title,
     price: node.variants.edges[0] ? asAmount(node.variants.edges[0].node.price) : null,
     imageUrl: safeImageUrl(node.featuredImage?.url),
+    productUrl: safeImageUrl(node.onlineStoreUrl), // https-only URL check, same rule as images
   })));
 
   const pageComplete = !connection.pageInfo.hasNextPage;
@@ -355,6 +361,7 @@ async function syncWooCommerceProducts(store: typeof stores.$inferSelect, job: t
     name: product.name,
     price: product.price ? asAmount(product.price) : null,
     imageUrl: safeImageUrl(product.images?.[0]?.src),
+    productUrl: safeImageUrl(product.permalink),
   }));
   await upsertProducts(store, products);
 

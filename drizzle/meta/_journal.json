@@ -127,6 +127,13 @@
       "when": 1793256524112,
       "tag": "0017_autopilot_proposals",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793257681701,
+      "tag": "0018_product_url",
+      "breakpoints": true
     }
   ]
 }

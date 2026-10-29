@@ -40,7 +40,7 @@ export async function loadStoreProfile(workspaceId: string): Promise<StoreProfil
     storeBusinessModel: store?.businessModel ?? null,
     useCase: workspace.useCase,
     industry: workspace.industry,
-    products: products.map((p) => ({ name: p.name, type: p.type, price: p.price === null ? null : Number(p.price), imageUrl: p.imageUrl, totalSales: p.totalSales })),
+    products: products.map((p) => ({ name: p.name, type: p.type, price: p.price === null ? null : Number(p.price), imageUrl: p.imageUrl, productUrl: p.productUrl, totalSales: p.totalSales })),
     contacts: { total: c?.total ?? 0, subscribed: c?.subscribed ?? 0, customers: c?.customers ?? 0, lapsed: c?.lapsed ?? 0, neverPurchased: c?.neverPurchased ?? 0, highSpenders: vip?.n ?? 0, vipThreshold },
     orders90d: orders?.n ?? 0,
     abandonedCheckouts30d: carts?.n ?? 0,

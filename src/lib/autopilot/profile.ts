@@ -13,6 +13,8 @@ export type ProductLite = {
   type: string; // digital_product_type
   price: number | null;
   imageUrl: string | null;
+  /** Public page of this product on the store, when the store provides one. */
+  productUrl?: string | null;
   totalSales: number | null;
 };
 

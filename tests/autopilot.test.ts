@@ -101,6 +101,15 @@ describe("personalizeTemplate on the whole library", () => {
     expect(r.subject).toBe(copy.subject);
   });
 
+  it("links each product to its own page, falling back to the store website", () => {
+    const def = TEMPLATE_LIBRARY.find((t) => t.key === "newsletter-clean")!;
+    const products = [product("Candle", { productUrl: "https://lumen.shop/products/candle" }), product("Vase", { productUrl: "http://insecure.example/vase" }), product("Plate")];
+    const r = personalizeTemplate(def, { brand, products, copy, usesProducts: true });
+    const cards = r.blocks.find((b) => b.type === "cards");
+    const urls = cards?.type === "cards" ? cards.items.map((i) => i.buttonUrl) : [];
+    expect(urls).toEqual(["https://lumen.shop/products/candle", "https://lumen.shop", "https://lumen.shop"]);
+  });
+
   it("drops product sections and warns when there are no products or no website", () => {
     const def = TEMPLATE_LIBRARY.find((t) => t.key === "newsletter-clean")!;
     const r = personalizeTemplate(def, { brand: { ...brand, website: null }, products: [], copy, usesProducts: true });

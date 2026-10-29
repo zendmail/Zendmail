@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -10,16 +10,11 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
-import { aiComplete } from "@/lib/ai/provider";
-import { canUseTemplate } from "@/lib/template-access";
 import { getDefaultSender } from "@/lib/sending/domains";
-import { TEMPLATE_LIBRARY } from "@/lib/template-library";
 import { sanitizeBlocks } from "@/lib/email-builder/document";
 import { parseTheme } from "@/lib/email-builder/theme";
-import { loadStoreProfile } from "@/lib/autopilot/profile-loader";
-import { buildPlan, type AudienceSpec } from "@/lib/autopilot/playbook";
-import { generateCopy } from "@/lib/autopilot/copy";
-import { personalizeTemplate } from "@/lib/autopilot/personalize";
+import { generateProposalsForWorkspace } from "@/lib/autopilot/generate";
+import type { AudienceSpec } from "@/lib/autopilot/playbook";
 
 async function requireWorkspace() {
   const user = await getCurrentUser();
@@ -29,60 +24,15 @@ async function requireWorkspace() {
   return { userId: user.id, workspace };
 }
 
-const DAY = 86_400_000;
-
 /** Reads the store, decides what to send to whom, and prepares reviewable drafts. Sends nothing. */
 export async function generateAutopilotPlanAction() {
   const { userId, workspace } = await requireWorkspace();
   const limit = await rateLimit("autopilot-generate", 6, 60 * 60);
   if (!limit.allowed) redirect("/ai/autopilot?error=rate");
 
-  const profile = await loadStoreProfile(workspace.id);
-  const plan = buildPlan(profile);
+  const result = await generateProposalsForWorkspace(workspace);
 
-  // Don't re-propose what the user recently approved (14 days) or dismissed (30 days).
-  const recent = await db
-    .select({ key: autopilotProposals.key, status: autopilotProposals.status, decidedAt: autopilotProposals.decidedAt })
-    .from(autopilotProposals)
-    .where(and(eq(autopilotProposals.workspaceId, workspace.id), inArray(autopilotProposals.status, ["APPROVED", "DISMISSED"]), gte(autopilotProposals.decidedAt, new Date(Date.now() - 30 * DAY))));
-  const skip = new Set(recent.filter((r) => r.status === "DISMISSED" || (r.decidedAt && r.decidedAt.getTime() > Date.now() - 14 * DAY)).map((r) => r.key));
-
-  const useAi = !!process.env.AI_PROVIDER_API_KEY;
-  const items = plan.items.filter((i) => !skip.has(i.key));
-
-  const built = await Promise.all(
-    items.map(async (item) => {
-      const def = item.templateKeys
-        .map((k) => TEMPLATE_LIBRARY.find((t) => t.key === k))
-        .find((t) => t && canUseTemplate(workspace.planName, t.tier));
-      if (!def) return null;
-      const { copy, source } = await generateCopy(item, profile, useAi ? aiComplete : null);
-      const out = personalizeTemplate(def, { brand: { name: workspace.name, logoUrl: workspace.logoUrl, website: workspace.website, currency: workspace.currency }, products: profile.featured, copy, usesProducts: item.usesProducts });
-      return { item, def, source, out };
-    })
-  );
-
-  await db.delete(autopilotProposals).where(and(eq(autopilotProposals.workspaceId, workspace.id), eq(autopilotProposals.status, "PROPOSED")));
-  const rows = built.filter((b): b is NonNullable<typeof b> => b !== null).map(({ item, def, source, out }) => ({
-    workspaceId: workspace.id,
-    key: item.key,
-    kind: item.kind,
-    title: item.title,
-    goal: item.goal,
-    why: item.why,
-    timing: item.timing,
-    audience: item.audience as unknown as Record<string, unknown>,
-    templateKey: def.key,
-    copySource: source,
-    subject: out.subject,
-    previewText: out.previewText,
-    blocks: out.blocks,
-    theme: out.theme,
-    warnings: out.warnings,
-  }));
-  if (rows.length) await db.insert(autopilotProposals).values(rows);
-
-  await recordAuditLog({ action: "autopilot.plan_generated", userId, workspaceId: workspace.id, metadata: { kind: profile.kind, proposals: rows.length, ai: useAi } });
+  await recordAuditLog({ action: "autopilot.plan_generated", userId, workspaceId: workspace.id, metadata: result });
   revalidatePath("/ai/autopilot");
   redirect("/ai/autopilot");
 }
