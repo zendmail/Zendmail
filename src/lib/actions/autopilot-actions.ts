@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -73,10 +73,28 @@ export async function approveAutopilotProposalAction(formData: FormData) {
   const audience = proposal.audience as unknown as AudienceSpec;
 
   if (proposal.kind === "WELCOME_FLOW") {
-    const [template] = await db
-      .insert(emailTemplates)
-      .values({ workspaceId: workspace.id, name: "Welcome email (Autopilot)", category: "WELCOME", subject: proposal.subject, previewText: proposal.previewText, blocks, theme })
-      .returning({ id: emailTemplates.id });
+    // Reuse the workspace's existing Autopilot welcome template (refreshing its content) instead of piling up copies.
+    const TEMPLATE_NAME = "Welcome email (Autopilot)";
+    const [existing] = await db
+      .select({ id: emailTemplates.id })
+      .from(emailTemplates)
+      .where(and(eq(emailTemplates.workspaceId, workspace.id), eq(emailTemplates.name, TEMPLATE_NAME)))
+      .orderBy(desc(emailTemplates.updatedAt))
+      .limit(1);
+    const content = { subject: proposal.subject, previewText: proposal.previewText, blocks, theme };
+    let template: { id: string };
+    if (existing) {
+      await db
+        .update(emailTemplates)
+        .set({ ...content, contentRevision: sql`${emailTemplates.contentRevision} + 1`, updatedAt: new Date() })
+        .where(eq(emailTemplates.id, existing.id));
+      template = existing;
+    } else {
+      [template] = await db
+        .insert(emailTemplates)
+        .values({ workspaceId: workspace.id, name: TEMPLATE_NAME, category: "WELCOME", ...content })
+        .returning({ id: emailTemplates.id });
+    }
     const [automation] = await db
       .insert(automations)
       .values({ workspaceId: workspace.id, name: "Welcome new subscribers", status: "DRAFT", triggerType: "CONTACT_CREATED", triggerConfig: {} })
