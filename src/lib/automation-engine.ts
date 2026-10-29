@@ -180,6 +180,8 @@ async function executeStep(contactId: string, type: string, config: AutomationSt
     case "SEND_EMAIL": {
       const { templateId } = config as { templateId: string };
       const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, templateId)).limit(1);
+      // Never send another workspace's template (built-ins have no workspace).
+      if (template && template.workspaceId && template.workspaceId !== contact.workspaceId) throw new Error("Template not found");
       if (!template) throw new Error("Template not found");
       if (contact.consentStatus !== "GRANTED") return; // silently skip — no consent, no send
       const [suppressed] = await db

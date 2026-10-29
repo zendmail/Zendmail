@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, Trash2, Zap, Pause, Play } from "lucide-react";
-import { isNull } from "drizzle-orm";
+import { eq, isNull, or, asc, sql } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,9 @@ export default async function AutomationDetailPage({ params }: { params: Promise
   const templates = await db
     .select({ id: emailTemplates.id, name: emailTemplates.name })
     .from(emailTemplates)
-    .where(isNull(emailTemplates.workspaceId));
+    .where(or(isNull(emailTemplates.workspaceId), eq(emailTemplates.workspaceId, workspace.id)))
+    // The workspace's own templates (Autopilot, Customize) first, then the built-in library.
+    .orderBy(sql`(${emailTemplates.workspaceId} is null)`, asc(emailTemplates.name));
 
   return (
     <div className="mx-auto max-w-[800px] space-y-5">

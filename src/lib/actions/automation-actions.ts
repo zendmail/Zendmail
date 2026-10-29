@@ -1,10 +1,10 @@
 "use server";
 
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
-import { automations, automationSteps, type AutomationStepConfig } from "@/db/schema";
+import { automations, automationSteps, emailTemplates, type AutomationStepConfig } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
@@ -97,8 +97,28 @@ export async function updateStepConfigAction(formData: FormData) {
   const value = String(formData.get("value"));
   await requireAutomation(workspace.id, automationId);
 
-  const [step] = await db.select().from(automationSteps).where(eq(automationSteps.id, stepId)).limit(1);
+  // The step must belong to this (workspace-checked) automation.
+  const [step] = await db
+    .select()
+    .from(automationSteps)
+    .where(and(eq(automationSteps.id, stepId), eq(automationSteps.automationId, automationId)))
+    .limit(1);
   if (!step) return;
+
+  if (field === "templateId") {
+    // Only a built-in template or one of this workspace's own templates may be sent.
+    const [tpl] = await db
+      .select({ id: emailTemplates.id })
+      .from(emailTemplates)
+      .where(
+        and(
+          eq(emailTemplates.id, value),
+          or(isNull(emailTemplates.workspaceId), eq(emailTemplates.workspaceId, workspace.id))
+        )
+      )
+      .limit(1);
+    if (!tpl) return;
+  }
 
   const config = { ...(step.config as Record<string, unknown>), [field]: field === "minutes" ? Number(value) : value };
   await db.update(automationSteps).set({ config: config as AutomationStepConfig }).where(eq(automationSteps.id, stepId));
