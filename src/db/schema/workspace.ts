@@ -44,6 +44,8 @@ export const workspaces = pgTable("workspaces", {
   currency: text("currency").default("USD").notNull(),
   timezone: text("timezone").default("UTC").notNull(),
   useCase: businessUseCaseEnum("use_case"),
+  // Business type the owner picked by hand for Autopilot (PHYSICAL | DIGITAL | SERVICE | CONTENT | MIXED); null = auto-detect.
+  autopilotBusinessKind: text("autopilot_business_kind"),
   onboardingStep: onboardingStep("onboarding_step").default("BUSINESS_INFO").notNull(),
   // Send Frequency Guard: the default cap on how many marketing emails
   // any one contact can receive per rolling 7-day window, counted

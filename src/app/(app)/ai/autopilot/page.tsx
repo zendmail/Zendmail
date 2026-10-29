@@ -10,10 +10,10 @@ import { loadStoreProfile } from "@/lib/autopilot/profile-loader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProposalCard } from "@/components/autopilot/proposal-card";
-import { generateAutopilotPlanAction } from "@/lib/actions/autopilot-actions";
+import { generateAutopilotPlanAction, setAutopilotBusinessKindAction } from "@/lib/actions/autopilot-actions";
 
 const KIND_LABEL = { PHYSICAL: "Physical products store", DIGITAL: "Digital products", SERVICE: "Software, services or memberships", CONTENT: "Newsletter or content business", MIXED: "Mixed (physical and digital)" } as const;
-const BASIS_LABEL = { STORE: "from your connected store", CATALOG: "from your product catalogue", ONBOARDING: "from your setup answers", DEFAULT: "a default until more data is available" } as const;
+const BASIS_LABEL = { MANUAL: "set by you", STORE: "from your connected store", CATALOG: "from your product catalogue", ONBOARDING: "from your setup answers", DEFAULT: "a default until more data is available" } as const;
 
 export default async function AutopilotPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
@@ -54,6 +54,16 @@ export default async function AutopilotPage({ searchParams }: { searchParams: Pr
         <ul className="mt-3 grid gap-1.5 text-[13px] text-text-secondary sm:grid-cols-2">
           {profile.signals.map((s) => (<li key={s} className="flex gap-2"><span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-text-tertiary" />{s}</li>))}
         </ul>
+        <form action={setAutopilotBusinessKindAction} className="mt-4 flex flex-wrap items-end gap-2">
+          <div>
+            <label htmlFor="kind" className="mb-1 block text-[12px] font-medium text-text-secondary">Not right? Choose your business type</label>
+            <select id="kind" name="kind" defaultValue={workspace.autopilotBusinessKind ?? ""} className="h-9 min-w-[260px] rounded-[8px] border border-border bg-surface px-2.5 text-[13px] text-text-primary outline-none focus:border-primary">
+              <option value="">Detect automatically</option>
+              {(Object.keys(KIND_LABEL) as (keyof typeof KIND_LABEL)[]).map((k) => (<option key={k} value={k}>{KIND_LABEL[k]}</option>))}
+            </select>
+          </div>
+          <Button type="submit" variant="secondary" size="sm">Save and refresh plan</Button>
+        </form>
         <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-text-tertiary"><ShieldCheck size={14} /> Nothing is sent automatically. {aiOn ? "Copy is written by AI and checked so it never invents discounts or claims." : "Copy uses safe built-in wording (AI writing is not enabled yet)."}</p>
       </section>
 

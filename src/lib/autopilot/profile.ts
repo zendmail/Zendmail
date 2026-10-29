@@ -19,6 +19,8 @@ export type ProductLite = {
 };
 
 export type ProfileInputs = {
+  /** The business type the owner chose by hand; always wins over detection. */
+  manualKind?: BusinessKind | null;
   storeBusinessModel: "PHYSICAL" | "DIGITAL" | "SUBSCRIPTION" | "MIXED" | null;
   useCase: "ECOMMERCE" | "NEWSLETTER" | "AGENCY" | "SAAS" | "OTHER" | null;
   industry: string | null;
@@ -32,7 +34,7 @@ export type ProfileInputs = {
 export type StoreProfile = {
   kind: BusinessKind;
   /** Where the classification came from, shown to the user so the detection is explainable. */
-  basis: "STORE" | "CATALOG" | "ONBOARDING" | "DEFAULT";
+  basis: "MANUAL" | "STORE" | "CATALOG" | "ONBOARDING" | "DEFAULT";
   confidence: "HIGH" | "MEDIUM" | "LOW";
   stage: Stage;
   priceBand: PriceBand;
@@ -42,7 +44,8 @@ export type StoreProfile = {
   inputs: ProfileInputs;
 };
 
-const DIGITAL_TYPES = new Set(["EBOOK", "COURSE", "TEMPLATE", "BUNDLE"]);
+// BUNDLE is deliberately neutral: "bundle" is just as common for physical goods.
+const DIGITAL_TYPES = new Set(["EBOOK", "COURSE", "TEMPLATE"]);
 const SERVICE_TYPES = new Set(["MEMBERSHIP", "SUBSCRIPTION", "SOFTWARE"]);
 
 export function isHttpsImage(url: string | null | undefined): url is string {
@@ -50,7 +53,7 @@ export function isHttpsImage(url: string | null | undefined): url is string {
 }
 
 function fromCatalog(products: ProductLite[]): BusinessKind | null {
-  const typed = products.filter((p) => p.type !== "OTHER");
+  const typed = products.filter((p) => p.type !== "OTHER" && p.type !== "BUNDLE");
   if (products.length < 2 || typed.length === 0) return null;
   const digital = typed.filter((p) => DIGITAL_TYPES.has(p.type)).length;
   const service = typed.filter((p) => SERVICE_TYPES.has(p.type)).length;
@@ -69,7 +72,12 @@ export function classifyStore(inputs: ProfileInputs): StoreProfile {
   const model = inputs.storeBusinessModel;
   const catalogKind = fromCatalog(inputs.products);
 
-  if (model) {
+  if (inputs.manualKind) {
+    kind = inputs.manualKind;
+    basis = "MANUAL";
+    confidence = "HIGH";
+    signals.push("You chose this business type yourself.");
+  } else if (model) {
     kind = model === "SUBSCRIPTION" ? "SERVICE" : model;
     basis = "STORE";
     confidence = "HIGH";

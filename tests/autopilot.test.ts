@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { classifyProductType } from "@/lib/product-type";
 import { classifyStore, type ProfileInputs, type ProductLite } from "@/lib/autopilot/profile";
 import { buildPlan } from "@/lib/autopilot/playbook";
 import { blackFriday, upcomingOccasion } from "@/lib/autopilot/occasions";
@@ -136,5 +137,65 @@ describe("generateCopy", () => {
     expect((await generateCopy(item, profile, async () => risky)).source).toBe("FALLBACK");
     expect((await generateCopy(item, profile, async () => { throw new Error("down"); })).source).toBe("FALLBACK");
     expect((await generateCopy(item, profile, null)).source).toBe("FALLBACK");
+  });
+});
+
+describe("classifyProductType", () => {
+  it("uses the merchant's own labels first", () => {
+    expect(classifyProductType({ title: "Mastering Sourdough", productType: "Online Course" })).toBe("COURSE");
+    expect(classifyProductType({ title: "Brand Kit", tags: ["canva", "template"] })).toBe("TEMPLATE");
+    expect(classifyProductType({ title: "Pro Plan", productType: "Software" })).toBe("SOFTWARE");
+    expect(classifyProductType({ title: "VIP Circle", tags: ["membership"] })).toBe("MEMBERSHIP");
+  });
+  it("trusts WooCommerce subscription / downloadable flags", () => {
+    expect(classifyProductType({ title: "Box", wooType: "variable-subscription" })).toBe("SUBSCRIPTION");
+    expect(classifyProductType({ title: "Recipes", downloadable: true })).toBe("EBOOK");
+    expect(classifyProductType({ title: "Course Pack", virtual: true })).toBe("COURSE");
+  });
+  it("only trusts unambiguous title words, so physical goods stay physical", () => {
+    expect(classifyProductType({ title: "The Ultimate eBook" })).toBe("EBOOK");
+    expect(classifyProductType({ title: "Plan B Scented Candle" })).toBe("OTHER");
+    expect(classifyProductType({ title: "Apple Cider Vinegar" })).toBe("OTHER");
+    expect(classifyProductType({ title: "Leather Bag", productType: "Bags" })).toBe("OTHER");
+    expect(classifyProductType({ title: "Gift Bundle", productType: "Bundle" })).toBe("BUNDLE");
+  });
+});
+
+describe("digital and service plans", () => {
+  const contacts = { total: 900, subscribed: 850, customers: 150, lapsed: 30, neverPurchased: 400, highSpenders: 15, vipThreshold: 200 };
+  const day = new Date("2026-03-10T00:00:00Z");
+  it("honours a manual business type over detection", () => {
+    const p = classifyStore(base({ manualKind: "SERVICE", products: [product("Mug")] }));
+    expect(p.kind).toBe("SERVICE");
+    expect(p.basis).toBe("MANUAL");
+  });
+  it("digital stores get a cross-sell to recent buyers and no physical-only advice", () => {
+    const p = classifyStore(base({ contacts, products: [product("A", { type: "EBOOK" }), product("B", { type: "COURSE" }), product("C", { type: "TEMPLATE" })] }));
+    const plan = buildPlan(p, day);
+    expect(p.kind).toBe("DIGITAL");
+    const cross = plan.items.find((i) => i.key === "cross-sell");
+    expect(cross?.audience.type === "SEGMENT" && cross.audience.rules.some((r) => r.field === "LAST_PURCHASE_AT" && r.operator === "AFTER")).toBe(true);
+    expect(plan.recommendations.map((r) => r.key)).toContain("download-ready");
+    expect(plan.recommendations.map((r) => r.key)).not.toContain("abandoned-cart");
+  });
+  it("service businesses get offers, customer updates and event-based recommendations", () => {
+    const p = classifyStore(base({ contacts, products: [product("Starter", { type: "SUBSCRIPTION", imageUrl: null }), product("Pro", { type: "SUBSCRIPTION", imageUrl: null })] }));
+    const plan = buildPlan(p, day);
+    expect(p.kind).toBe("SERVICE");
+    const keys = plan.items.map((i) => i.key);
+    expect(keys).toEqual(expect.arrayContaining(["welcome-series", "bestsellers", "customer-update"]));
+    expect(plan.items.find((i) => i.key === "bestsellers")?.title).toMatch(/plans and offers/);
+    expect(plan.recommendations.map((r) => r.key)).toEqual(expect.arrayContaining(["trial-ending", "booking-reminder"]));
+  });
+  it("personalizes every item's templates without leaking unsafe content for digital and service plans", () => {
+    for (const type of ["COURSE", "SUBSCRIPTION"]) {
+      const p = classifyStore(base({ contacts, products: [product("One", { type }), product("Two", { type })] }));
+      for (const item of buildPlan(p, day).items) {
+        for (const key of item.templateKeys) {
+          const def = TEMPLATE_LIBRARY.find((t) => t.key === key);
+          expect(def, `${item.key}: missing template ${key}`).toBeDefined();
+        }
+      }
+    }
   });
 });

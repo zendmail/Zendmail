@@ -85,17 +85,17 @@ export function buildPlan(profile: StoreProfile, now: Date = new Date()): Plan {
     });
   }
 
-  if (hasProducts && (physicalish || kind === "DIGITAL")) {
+  if (hasProducts && kind !== "CONTENT") {
     items.push({
       key: "bestsellers",
       kind: "CAMPAIGN",
-      title: kind === "DIGITAL" ? "Spotlight your best product" : "Bestsellers and favourites",
+      title: kind === "DIGITAL" ? "Spotlight your best product" : kind === "SERVICE" ? "Spotlight your plans and offers" : "Bestsellers and favourites",
       goal: "Turn subscribers into buyers with your strongest products.",
       why: `You have ${inputs.products.length} product${inputs.products.length === 1 ? "" : "s"}${profile.featured.some((p) => (p.totalSales ?? 0) > 0) ? ", and we ranked them by real sales" : ""}. Product-led emails are the simplest way to drive revenue.`,
       audience: { type: "ALL", label: "All subscribers who can receive marketing" },
       timing: "Tuesday or Thursday, mid-morning in your timezone",
-      templateKeys: kind === "DIGITAL" ? ["digital-ebook-launch", "pro-digital-course-launch"] : ["newsletter-clean", "sale-bold"],
-      copyBrief: "Introduce the featured products and why customers love them.",
+      templateKeys: kind === "DIGITAL" ? ["digital-ebook-launch", "pro-digital-course-launch"] : kind === "SERVICE" ? ["pro-product-update", "newsletter-clean"] : ["newsletter-clean", "sale-bold"],
+      copyBrief: kind === "SERVICE" ? "Explain what each plan or offer helps customers achieve, in plain language." : "Introduce the featured products and why customers love them.",
       priority: 80,
       usesProducts: true,
     });
@@ -158,6 +158,44 @@ export function buildPlan(profile: StoreProfile, now: Date = new Date()): Plan {
     });
   }
 
+  if ((kind === "DIGITAL" || kind === "MIXED") && inputs.products.length >= 2 && c.customers >= 10) {
+    items.push({
+      key: "cross-sell",
+      kind: "CAMPAIGN",
+      title: "Recommend your next product to recent buyers",
+      goal: "Turn one-time buyers into repeat customers while the first purchase is fresh.",
+      why: `${c.customers} people have bought from you and you have ${inputs.products.length} products. Customers who just bought are the most likely to buy again, and a digital product costs nothing extra to deliver.`,
+      audience: {
+        type: "SEGMENT", label: "Customers who bought in the last 60 days", segmentName: "Autopilot: recent buyers (60 days)", matchType: "ALL",
+        rules: [{ field: "TOTAL_ORDERS", operator: "GREATER_THAN", value: "0" }, { field: "LAST_PURCHASE_AT", operator: "AFTER", value: "60" }],
+      },
+      timing: "1 to 3 weeks after their purchase",
+      templateKeys: ["pro-digital-download-ready", "digital-ebook-launch"],
+      copyBrief: "Suggest the next product that goes well with what they already bought. Friendly, no discount.",
+      priority: 75,
+      usesProducts: true,
+    });
+  }
+
+  if (kind === "SERVICE" && c.customers >= 10) {
+    items.push({
+      key: "customer-update",
+      kind: "CAMPAIGN",
+      title: "What's new for your customers",
+      goal: "Show active customers the value they are getting and reduce cancellations.",
+      why: `${c.customers} customers are paying you. Regular product news reminds them of the value they get, which is one of the best ways to reduce churn.`,
+      audience: {
+        type: "SEGMENT", label: "Everyone who has purchased", segmentName: "Autopilot: customers", matchType: "ALL",
+        rules: [{ field: "TOTAL_ORDERS", operator: "GREATER_THAN", value: "0" }],
+      },
+      timing: "Monthly, early in the week",
+      templateKeys: ["pro-product-update", "newsletter-clean"],
+      copyBrief: "A short update on what is new or improved, focusing on benefits for the customer. No invented features.",
+      priority: 72,
+      usesProducts: false,
+    });
+  }
+
   if (kind === "CONTENT" || (stage !== "STARTING" && kind !== "PHYSICAL")) {
     items.push({
       key: "newsletter",
@@ -175,16 +213,22 @@ export function buildPlan(profile: StoreProfile, now: Date = new Date()): Plan {
   }
 
   const recommendations: Recommendation[] = [];
-  if (inputs.abandonedCheckouts30d > 0 || physicalish) {
+  const needsEvents = "It needs live events from your store or app, which Zendmail will switch on once they are connected.";
+  if (physicalish) {
     recommendations.push({
       key: "abandoned-cart",
       title: "Abandoned cart reminder",
-      why: inputs.abandonedCheckouts30d > 0
-        ? `${inputs.abandonedCheckouts30d} checkouts were abandoned in the last 30 days. An automatic reminder normally recovers a meaningful share. It needs live store events, which Zendmail will switch on once the store webhooks are connected.`
-        : "Automatic reminders for abandoned carts need live store events, which Zendmail will switch on once the store webhooks are connected.",
+      why: inputs.abandonedCheckouts30d > 0 ? `${inputs.abandonedCheckouts30d} checkouts were abandoned in the last 30 days. An automatic reminder normally recovers a meaningful share. ${needsEvents}` : `Automatic reminders for abandoned carts. ${needsEvents}`,
     });
+    recommendations.push({ key: "post-purchase", title: "Post-purchase thank-you and review request", why: `Sent a few days after delivery. ${needsEvents}` });
   }
-  if (physicalish) recommendations.push({ key: "post-purchase", title: "Post-purchase thank-you and review request", why: "Sent a few days after delivery. This also needs live order events; the template is ready in your library." });
+  if (kind === "DIGITAL" || kind === "MIXED") {
+    recommendations.push({ key: "download-ready", title: "Instant delivery and onboarding email", why: `Sent right after purchase with access details and a first step. ${needsEvents}` });
+  }
+  if (kind === "SERVICE") {
+    recommendations.push({ key: "trial-ending", title: "Trial ending and renewal reminders", why: `Reminds people before a trial ends or a subscription renews. ${needsEvents}` });
+    recommendations.push({ key: "booking-reminder", title: "Booking and appointment reminders", why: `Cuts no-shows. ${needsEvents}` });
+  }
 
   return { items: items.sort((a, b) => b.priority - a.priority).slice(0, 6), recommendations };
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { and, asc, eq, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { classifyProductType, type DigitalProductType } from "@/lib/product-type";
 import { db } from "@/db/client";
 import { digitalProducts, stores, storeOrders, storeSyncJobs, type StoreOrderLineItem } from "@/db/schema";
 import { decryptStoreCredentials, encryptStoreCredentials, type StoreCredentials } from "@/lib/store-credentials";
@@ -23,6 +24,7 @@ const shopifyProductResponseSchema = z.object({
           updatedAt: z.string(),
           featuredImage: z.object({ url: z.string() }).nullable().optional(),
           onlineStoreUrl: z.string().nullable().optional(),
+          tags: z.array(z.string()).optional(),
           variants: z.object({ edges: z.array(z.object({ node: z.object({ price: z.string() }) })) }),
         }),
       })),
@@ -72,6 +74,10 @@ const wooProductSchema = z.object({
   price: z.string().optional(),
   images: z.array(z.object({ src: z.string() })).optional(),
   permalink: z.string().optional(),
+  virtual: z.boolean().optional(),
+  downloadable: z.boolean().optional(),
+  tags: z.array(z.object({ name: z.string() })).optional(),
+  categories: z.array(z.object({ name: z.string() })).optional(),
   date_modified_gmt: z.string().nullable().optional(),
 });
 
@@ -96,7 +102,7 @@ const wooOrderSchema = z.object({
 
 const shopifyProductsQuery = `query ZendmailProducts($first: Int!, $after: String, $filter: String) {
   products(first: $first, after: $after, query: $filter, sortKey: UPDATED_AT) {
-    edges { cursor node { id title productType updatedAt featuredImage { url } onlineStoreUrl variants(first: 1) { edges { node { price } } } } }
+    edges { cursor node { id title productType tags updatedAt featuredImage { url } onlineStoreUrl variants(first: 1) { edges { node { price } } } } }
     pageInfo { hasNextPage endCursor }
   }
 }`;
@@ -185,6 +191,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
   price: number | null;
   imageUrl: string | null;
   productUrl: string | null;
+  type: DigitalProductType;
 }[]) {
   if (rows.length === 0) return;
   const now = new Date();
@@ -193,7 +200,7 @@ async function upsertProducts(store: typeof stores.$inferSelect, rows: {
     storeId: store.id,
     externalId: row.externalId,
     name: row.name,
-    type: "OTHER" as const,
+    type: row.type,
     price: row.price === null ? null : row.price.toFixed(2),
     imageUrl: row.imageUrl,
     productUrl: row.productUrl,
@@ -266,6 +273,7 @@ async function syncShopifyProducts(store: typeof stores.$inferSelect, job: typeo
     price: node.variants.edges[0] ? asAmount(node.variants.edges[0].node.price) : null,
     imageUrl: safeImageUrl(node.featuredImage?.url),
     productUrl: safeImageUrl(node.onlineStoreUrl), // https-only URL check, same rule as images
+    type: classifyProductType({ title: node.title, productType: node.productType, tags: node.tags }),
   })));
 
   const pageComplete = !connection.pageInfo.hasNextPage;
@@ -362,6 +370,7 @@ async function syncWooCommerceProducts(store: typeof stores.$inferSelect, job: t
     price: product.price ? asAmount(product.price) : null,
     imageUrl: safeImageUrl(product.images?.[0]?.src),
     productUrl: safeImageUrl(product.permalink),
+    type: classifyProductType({ title: product.name, wooType: product.type, virtual: product.virtual, downloadable: product.downloadable, tags: [...(product.tags ?? []), ...(product.categories ?? [])].map((t) => t.name) }),
   }));
   await upsertProducts(store, products);
 

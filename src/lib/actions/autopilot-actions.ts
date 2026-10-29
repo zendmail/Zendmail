@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { autopilotProposals, automationSteps, automations, campaigns, emailTemplates, segmentRules, segments } from "@/db/schema";
+import { workspaces, autopilotProposals, automationSteps, automations, campaigns, emailTemplates, segmentRules, segments } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
@@ -118,4 +118,16 @@ export async function dismissAutopilotProposalAction(formData: FormData) {
   await db.update(autopilotProposals).set({ status: "DISMISSED", decidedAt: new Date() }).where(eq(autopilotProposals.id, proposal.id));
   await recordAuditLog({ action: "autopilot.dismissed", userId, workspaceId: workspace.id, metadata: { key: proposal.key } });
   revalidatePath("/ai/autopilot");
+}
+
+const KINDS = ["PHYSICAL", "DIGITAL", "SERVICE", "CONTENT", "MIXED"] as const;
+
+/** Lets the owner override the detected business type ("" = detect automatically), then rebuilds the plan for it. */
+export async function setAutopilotBusinessKindAction(formData: FormData) {
+  const { userId, workspace } = await requireWorkspace();
+  const raw = String(formData.get("kind") ?? "");
+  const kind = (KINDS as readonly string[]).includes(raw) ? raw : null;
+  await db.update(workspaces).set({ autopilotBusinessKind: kind, updatedAt: new Date() }).where(eq(workspaces.id, workspace.id));
+  await recordAuditLog({ action: "autopilot.business_kind_set", userId, workspaceId: workspace.id, metadata: { kind } });
+  await generateAutopilotPlanAction();
 }

@@ -37,6 +37,7 @@ export async function loadStoreProfile(workspaceId: string): Promise<StoreProfil
   const [carts] = await db.select({ n: sql<number>`count(*)::int` }).from(abandonedCheckouts).where(and(eq(abandonedCheckouts.workspaceId, workspaceId), eq(abandonedCheckouts.status, "ABANDONED"), gte(abandonedCheckouts.startedAt, d30)));
 
   const inputs: ProfileInputs = {
+    manualKind: (["PHYSICAL", "DIGITAL", "SERVICE", "CONTENT", "MIXED"] as const).find((k) => k === workspace.autopilotBusinessKind) ?? null,
     storeBusinessModel: store?.businessModel ?? null,
     useCase: workspace.useCase,
     industry: workspace.industry,
