@@ -1,7 +1,7 @@
 import "server-only";
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import { autopilotProposals } from "@/db/schema";
+import { autopilotProposals, automations } from "@/db/schema";
 import { aiComplete } from "@/lib/ai/provider";
 import { canUseTemplate } from "@/lib/template-access";
 import { TEMPLATE_LIBRARY } from "@/lib/template-library";
@@ -28,6 +28,16 @@ export async function generateProposalsForWorkspace(workspace: WorkspaceForAutop
     .from(autopilotProposals)
     .where(and(eq(autopilotProposals.workspaceId, workspace.id), inArray(autopilotProposals.status, ["APPROVED", "DISMISSED"]), gte(autopilotProposals.decidedAt, new Date(Date.now() - 30 * DAY))));
   const skip = new Set(recent.filter((r) => r.status === "DISMISSED" || (r.decidedAt && r.decidedAt.getTime() > Date.now() - 14 * DAY)).map((r) => r.key));
+
+  // An approved welcome flow that was later deleted must be offered again.
+  const [liveWelcome] = await db
+    .select({ id: automations.id })
+    .from(automations)
+    .where(and(eq(automations.workspaceId, workspace.id), eq(automations.triggerType, "CONTACT_CREATED"), isNull(automations.deletedAt)))
+    .limit(1);
+  if (!liveWelcome) {
+    for (const r of recent) if (r.status === "APPROVED" && r.key.startsWith("welcome")) skip.delete(r.key);
+  }
 
   const useAi = !!process.env.AI_PROVIDER_API_KEY;
   const built = await Promise.all(
