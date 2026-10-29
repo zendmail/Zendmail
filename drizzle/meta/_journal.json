@@ -120,6 +120,13 @@
       "when": 1793169608244,
       "tag": "0016_builder_content_revision",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793256524112,
+      "tag": "0017_autopilot_proposals",
+      "breakpoints": true
     }
   ]
 }

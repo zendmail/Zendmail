@@ -9,6 +9,7 @@ import {
   SquareMousePointer,
   Sparkles,
   Wand2,
+  Bot,
   Store,
   UserRound,
   ShoppingCart,
@@ -56,6 +57,7 @@ export const navGroups: NavGroup[] = [
   {
     label: "AI",
     items: [
+      { label: "Autopilot", href: "/ai/autopilot", icon: Bot },
       { label: "AI Studio", href: "/ai/studio", icon: Sparkles },
       { label: "Audience Builder", href: "/ai/audience-builder", icon: Wand2 },
     ],
