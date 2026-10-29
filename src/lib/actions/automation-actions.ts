@@ -10,6 +10,7 @@ import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
 import { createAutomationSchema } from "@/lib/validation/automations";
 import { processDueRuns } from "@/lib/automation-engine";
+import { getActivationIssue } from "@/lib/automations";
 import type { ActionState } from "@/lib/actions/auth-actions";
 
 async function requireWorkspace() {
@@ -130,8 +131,8 @@ export async function activateAutomationAction(formData: FormData) {
   const automationId = String(formData.get("automationId"));
   await requireAutomation(workspace.id, automationId);
 
-  const steps = await db.select().from(automationSteps).where(eq(automationSteps.automationId, automationId));
-  if (steps.length === 0) return;
+  // Never go live with an empty or broken step: it would fail for every contact that enters.
+  if (await getActivationIssue(workspace.id, automationId)) return;
 
   await db.update(automations).set({ status: "ACTIVE", updatedAt: new Date() }).where(eq(automations.id, automationId));
   await recordAuditLog({ action: "automation.activated", userId, workspaceId: workspace.id, metadata: { automationId } });

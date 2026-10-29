@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Trash2, Zap, Pause, Play } from "lucide-react";
+import { ArrowLeft, Trash2, Zap, Pause, Play, TriangleAlert } from "lucide-react";
 import { eq, isNull, or, asc, sql } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { StepEditor } from "@/components/automations/step-editor";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
-import { getAutomationWithSteps } from "@/lib/automations";
+import { getAutomationWithSteps, getActivationIssue } from "@/lib/automations";
 import { activateAutomationAction, pauseAutomationAction, deleteAutomationAction } from "@/lib/actions/automation-actions";
 import { db } from "@/db/client";
 import { emailTemplates } from "@/db/schema";
@@ -24,6 +24,8 @@ export default async function AutomationDetailPage({ params }: { params: Promise
 
   const automation = await getAutomationWithSteps(workspace.id, id);
   if (!automation) notFound();
+
+  const issue = automation.status === "ACTIVE" ? null : await getActivationIssue(workspace.id, automation.id);
 
   const templates = await db
     .select({ id: emailTemplates.id, name: emailTemplates.name })
@@ -61,7 +63,7 @@ export default async function AutomationDetailPage({ params }: { params: Promise
           ) : (
             <form action={activateAutomationAction}>
               <input type="hidden" name="automationId" value={automation.id} />
-              <Button type="submit" size="sm" disabled={automation.steps.length === 0}>
+              <Button type="submit" size="sm" disabled={!!issue}>
                 <Play size={14} />
                 Activate
               </Button>
@@ -93,6 +95,13 @@ export default async function AutomationDetailPage({ params }: { params: Promise
           )}
         </p>
       </Card>
+
+      {issue && (
+        <div role="alert" className="flex items-start gap-2.5 rounded-[12px] border border-warning/30 bg-warning-surface px-4 py-3 text-[13px] text-text-primary">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0 text-warning" />
+          <span><strong className="font-semibold">Not ready to activate.</strong> {issue}</span>
+        </div>
+      )}
 
       <Card>
         <CardHeader>

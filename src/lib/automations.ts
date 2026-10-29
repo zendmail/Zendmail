@@ -1,7 +1,8 @@
 import "server-only";
-import { and, eq, sql, desc } from "drizzle-orm";
+import { and, eq, sql, desc, isNull, or } from "drizzle-orm";
 import { db } from "@/db/client";
-import { automations, automationSteps, automationRuns } from "@/db/schema";
+import { automations, automationSteps, automationRuns, emailTemplates } from "@/db/schema";
+import { findAutomationIssue } from "@/lib/automation-validation";
 
 export async function listAutomations(workspaceId: string) {
   const rows = await db
@@ -46,4 +47,14 @@ export async function getAutomationWithSteps(workspaceId: string, automationId: 
     .orderBy(automationSteps.order);
 
   return { ...automation, steps };
+}
+
+/** Why this automation cannot be activated yet (null = ready). Checks every step against the workspace's usable templates. */
+export async function getActivationIssue(workspaceId: string, automationId: string): Promise<string | null> {
+  const steps = await db.select().from(automationSteps).where(eq(automationSteps.automationId, automationId));
+  const templateRows = await db
+    .select({ id: emailTemplates.id })
+    .from(emailTemplates)
+    .where(or(isNull(emailTemplates.workspaceId), eq(emailTemplates.workspaceId, workspaceId)));
+  return findAutomationIssue(steps, new Set(templateRows.map((t) => t.id)));
 }
