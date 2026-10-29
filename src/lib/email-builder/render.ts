@@ -1,5 +1,6 @@
 import type { EmailBlock, EmailCardItem, EmailTheme } from "@/db/schema";
-import { appUrl } from "../app-url";
+import { appUrl as serverAppUrl } from "../app-url";
+import { EDITOR_SCRIPT } from "./editor-frame-script";
 import { applyMergeTags, SAMPLE_VARS, type MergeVars } from "./merge";
 import { badgeAssetUrl, iconAssetUrl, resolveImageUrl, waveAssetUrl } from "./assets";
 import { contrastOn, DEFAULT_THEME, fontStack, googleFontsHref, mix, parseTheme, resolveColor } from "./theme";
@@ -20,7 +21,14 @@ export type RenderOptions = {
   preheader?: string | null;
   /** Physical postal address printed under the content (required in marketing email by CAN-SPAM, GDPR/ePrivacy rules and most mailbox providers). */
   postalAddress?: string | null;
+  /** Editor canvas mode: wraps every block with its id and adds the selection overlay script. Never used for sending. */
+  editor?: { baseUrl: string } | null;
 };
+
+// Asset/link base for this render. The editor renders in the browser, where APP_URL is not available, so it
+// passes its own origin. Rendering is synchronous, so a module-level override is safe.
+let baseOverride: string | null = null;
+const appUrl = (path: string) => (baseOverride !== null ? `${baseOverride}${path}` : serverAppUrl(path));
 
 const WIDTH = 600;
 const PAD = 32;
@@ -372,10 +380,25 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
 // ---------------------------------------------------------------------------
 
 export function renderEmailHtml(blocks: EmailBlock[], options: RenderOptions = {}): string {
+  const previous = baseOverride;
+  baseOverride = options.editor ? options.editor.baseUrl.replace(/\/$/, "") : null;
+  try {
+    return renderEmailHtmlInner(blocks, options);
+  } finally {
+    baseOverride = previous;
+  }
+}
+
+function renderEmailHtmlInner(blocks: EmailBlock[], options: RenderOptions): string {
   const theme = options.theme ? parseTheme(options.theme) : DEFAULT_THEME;
   const tracking = options.tracking ?? null;
   const c = makeCtx(theme, tracking);
-  const body = blocks.map((b) => renderBlock(b, c)).join("\n");
+  const body = blocks
+    .map((b) => {
+      const rows = renderBlock(b, c);
+      return options.editor ? `<tbody data-block-id="${esc(b.id)}" data-block-type="${esc(b.type)}">${rows || `<tr><td height="24" style="height:24px;"></td></tr>`}</tbody>` : rows;
+    })
+    .join("\n");
   const fonts = googleFontsHref(theme);
   const postalAddress = options.postalAddress?.trim();
   const postal = postalAddress
@@ -429,6 +452,7 @@ ${postal}
 </td></tr>
 </table>
 ${pixel}
+${options.editor ? `<script>${EDITOR_SCRIPT}</script>` : ""}
 </body>
 </html>`;
 

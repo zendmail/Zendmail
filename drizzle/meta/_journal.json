@@ -113,6 +113,13 @@
       "when": 1793131828651,
       "tag": "0015_template_categories_more",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793169608244,
+      "tag": "0016_builder_content_revision",
+      "breakpoints": true
     }
   ]
 }

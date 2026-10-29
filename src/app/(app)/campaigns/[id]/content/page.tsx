@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { CampaignWizardSteps } from "@/components/campaigns/campaign-wizard-steps";
 import { TemplatePicker } from "@/components/campaigns/template-picker";
 import { ContentDetailsForm } from "@/components/campaigns/content-details-form";
-import { BlockEditor } from "@/components/campaigns/block-editor";
 import { EmailPreview } from "@/components/campaigns/email-preview";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
@@ -15,8 +14,6 @@ import { isDomainSendable } from "@/lib/sending/rules";
 import { db } from "@/db/client";
 import { emailTemplates, type EmailBlock } from "@/db/schema";
 import { asc, eq, isNull, or, sql } from "drizzle-orm";
-import { ThemePanel } from "@/components/campaigns/theme-panel";
-import { parseTheme } from "@/lib/email-builder/theme";
 
 export default async function CampaignContentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -43,7 +40,6 @@ export default async function CampaignContentPage({ params }: { params: Promise<
     .where(or(isNull(emailTemplates.workspaceId), eq(emailTemplates.workspaceId, workspace.id)))
     .orderBy(sql`(${emailTemplates.workspaceId} is not null)`, asc(emailTemplates.sortOrder), asc(emailTemplates.createdAt));
   const templateItems = templates.map((t) => ({ ...t, isBuiltIn: true }));
-  const theme = parseTheme(campaign.theme);
 
   const blocks = campaign.blocks as EmailBlock[];
 
@@ -77,10 +73,13 @@ export default async function CampaignContentPage({ params }: { params: Promise<
           <Card>
             <CardHeader>
               <CardTitle>Email content</CardTitle>
+              <CardDescription>Design the email visually: drag sections to reorder, click anything in the preview to edit it.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <ThemePanel campaignId={id} theme={theme} />
-              <BlockEditor campaignId={id} blocks={blocks} theme={theme} />
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-[13px] text-text-secondary">{blocks.length} {blocks.length === 1 ? "section" : "sections"} · colours, fonts and buttons are in the Theme tab.</p>
+              <Link href={`/campaigns/${id}/editor`}>
+                <Button>Open editor</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

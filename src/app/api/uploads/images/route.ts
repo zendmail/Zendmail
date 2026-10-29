@@ -4,15 +4,19 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
+import { and, eq } from "drizzle-orm";
+import { db } from "@/db/client";
+import { emailTemplates } from "@/db/schema";
 import { getCampaignById } from "@/lib/campaigns";
 import { rateLimit } from "@/lib/rate-limit";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const uploadSchema = z.object({
-  campaignId: z.string().uuid(),
+  campaignId: z.string().uuid().optional(),
+  templateId: z.string().uuid().optional(),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
   fileSize: z.number().int().positive().max(MAX_IMAGE_BYTES),
-});
+}).refine((v) => Boolean(v.campaignId) !== Boolean(v.templateId), "Provide a campaign or a template.");
 
 const extensionByType = {
   "image/jpeg": "jpg",
@@ -43,9 +47,21 @@ export async function POST(request: Request) {
     return Response.json({ error: "Choose a JPG, PNG, WebP, or GIF image under 10 MB." }, { status: 400 });
   }
 
-  const campaign = await getCampaignById(workspace.id, parsed.data.campaignId);
-  if (!campaign || campaign.status !== "DRAFT") {
-    return Response.json({ error: "Images can only be added to a draft campaign in this workspace." }, { status: 404 });
+  let scope: string;
+  if (parsed.data.campaignId) {
+    const campaign = await getCampaignById(workspace.id, parsed.data.campaignId);
+    if (!campaign || campaign.status !== "DRAFT") {
+      return Response.json({ error: "Images can only be added to a draft campaign in this workspace." }, { status: 404 });
+    }
+    scope = `campaigns/${campaign.id}`;
+  } else {
+    const [template] = await db
+      .select({ id: emailTemplates.id })
+      .from(emailTemplates)
+      .where(and(eq(emailTemplates.id, parsed.data.templateId!), eq(emailTemplates.workspaceId, workspace.id)))
+      .limit(1);
+    if (!template) return Response.json({ error: "Images can only be added to a template in this workspace." }, { status: 404 });
+    scope = `templates/${template.id}`;
   }
 
   const accessKeyId = process.env.S3_ACCESS_KEY_ID;
@@ -57,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   const extension = extensionByType[parsed.data.contentType];
-  const key = `workspaces/${workspace.id}/campaigns/${campaign.id}/images/${randomUUID()}.${extension}`;
+  const key = `workspaces/${workspace.id}/${scope}/images/${randomUUID()}.${extension}`;
   const s3 = new S3Client({
     region,
     credentials: { accessKeyId, secretAccessKey },

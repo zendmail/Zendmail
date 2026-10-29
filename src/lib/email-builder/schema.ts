@@ -222,9 +222,9 @@ export function isSectionType(type: string): type is SectionType {
 const URL_OK = /^(https?:\/\/|mailto:|tel:|\/(?!\/)|#|\{\{\s*[a-z_]+\s*\}\})/i;
 const ASSET_OK = new RegExp(`^asset:art\\?name=(${ART_NAMES.join("|")})(&c[123]=(@[A-Za-z]+|#?[0-9a-fA-F]{6}))*$`);
 
-type Coerced = { ok: true; value: unknown } | { ok: false };
+export type Coerced = { ok: true; value: unknown } | { ok: false };
 
-function coerce(def: FieldDef, raw: string): Coerced {
+export function coerceField(def: FieldDef, raw: string): Coerced {
   const value = raw.replace(/\r\n/g, "\n");
   switch (def.kind) {
     case "text": {
@@ -281,7 +281,7 @@ export function setSectionField(block: EmailBlock, path: string, raw: string): E
   const next = cloneBlock(block) as unknown as Record<string, unknown>;
 
   const assign = (target: Record<string, unknown>, field: FieldDef, key: string) => {
-    const result = coerce(field, raw);
+    const result = coerceField(field, raw);
     if (!result.ok) return false;
     if (result.value === undefined) delete target[key];
     else target[key] = result.value;

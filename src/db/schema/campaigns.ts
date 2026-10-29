@@ -158,6 +158,8 @@ export const emailTemplates = pgTable(
     previewText: text("preview_text"),
     blocks: jsonb("blocks").$type<EmailBlock[]>().notNull().default([]),
     theme: jsonb("theme").$type<EmailTheme | null>(),
+    // Bumped on every editor save; the editor sends the revision it loaded so two tabs cannot silently overwrite each other.
+    contentRevision: integer("content_revision").default(0).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
@@ -205,6 +207,7 @@ export const campaigns = pgTable(
     blocks: jsonb("blocks").$type<EmailBlock[]>().notNull().default([]),
     theme: jsonb("theme").$type<EmailTheme | null>(),
     templateId: uuid("template_id").references(() => emailTemplates.id, { onDelete: "set null" }),
+    contentRevision: integer("content_revision").default(0).notNull(),
 
     recipientCount: integer("recipient_count").default(0).notNull(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),

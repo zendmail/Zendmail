@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Crown, Eye, LayoutTemplate, Lock, Plus, Search, Sparkles } from "lucide-react";
+import { Crown, Eye, PencilRuler, LayoutTemplate, Lock, Plus, Search, Sparkles } from "lucide-react";
 import { categoryLabels, templateCategories } from "@/components/templates/template-catalog";
 import { TemplateModal, TemplateThumb } from "@/components/templates/template-frame";
 import type { TemplateListItem } from "@/components/templates/template-types";
 import { Badge } from "@/components/ui/badge";
 import { createCampaignFromTemplateAction } from "@/lib/actions/campaign-actions";
+import { customizeTemplateAction } from "@/lib/actions/builder-actions";
 
 type Tier = "ALL" | "FREE" | "PRO";
 
@@ -21,12 +22,20 @@ function UseButton({ template, canUsePro, full = false }: { template: TemplateLi
     );
   }
   return (
-    <form action={createCampaignFromTemplateAction} className={full ? "w-full" : ""}>
-      <input type="hidden" name="templateId" value={template.id} />
-      <button type="submit" className={`${size} bg-primary text-white hover:bg-primary-hover`}>
-        Use this template
-      </button>
-    </form>
+    <div className={`flex gap-2 ${full ? "w-full" : ""}`}>
+      <form action={createCampaignFromTemplateAction} className={full ? "min-w-0 flex-1" : ""}>
+        <input type="hidden" name="templateId" value={template.id} />
+        <button type="submit" className={`${size} bg-primary text-white hover:bg-primary-hover`}>
+          Use this template
+        </button>
+      </form>
+      <form action={customizeTemplateAction}>
+        <input type="hidden" name="templateId" value={template.id} />
+        <button type="submit" title="Open in the visual editor" className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] border border-border bg-surface px-3.5 text-[13px] font-semibold text-text-primary transition-colors hover:bg-surface-secondary">
+          <PencilRuler size={14} /> {template.isBuiltIn ? "Customize" : "Edit"}
+        </button>
+      </form>
+    </div>
   );
 }
 
