@@ -1,10 +1,11 @@
 "use server";
 
 import { z } from "zod";
+import { and, eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
-import { emailTemplates, type EmailBlock } from "@/db/schema";
+import { automations, automationSteps, emailTemplates, type EmailBlock } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
@@ -74,4 +75,42 @@ export async function createTemplateAction(_previousState: ActionState, formData
 
   revalidatePath("/templates");
   redirect("/templates");
+}
+
+/** Deletes one of the workspace's own templates. Built-in templates can never be deleted, and a template that an
+ *  automation still sends is refused so that automation does not break. Campaigns keep their own copy of the content. */
+export async function deleteTemplateAction(_previousState: ActionState, formData: FormData): Promise<ActionState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const workspace = await getActiveWorkspaceForUser(user.id);
+  if (!workspace) redirect("/onboarding/create");
+
+  const id = z.string().uuid().safeParse(String(formData.get("templateId")));
+  if (!id.success) return { error: "Template not found." };
+
+  const [template] = await db
+    .select({ id: emailTemplates.id, name: emailTemplates.name })
+    .from(emailTemplates)
+    .where(and(eq(emailTemplates.id, id.data), eq(emailTemplates.workspaceId, workspace.id)))
+    .limit(1);
+  if (!template) return { error: "Template not found." };
+
+  const [inUse] = await db
+    .select({ id: automationSteps.id })
+    .from(automationSteps)
+    .innerJoin(automations, eq(automations.id, automationSteps.automationId))
+    .where(
+      and(
+        eq(automations.workspaceId, workspace.id),
+        sql`${automations.deletedAt} is null`,
+        sql`${automationSteps.config}->>'templateId' = ${template.id}`
+      )
+    )
+    .limit(1);
+  if (inUse) return { error: "An automation still uses this template. Change or remove that step first." };
+
+  await db.delete(emailTemplates).where(and(eq(emailTemplates.id, template.id), eq(emailTemplates.workspaceId, workspace.id)));
+  await recordAuditLog({ action: "template.deleted", userId: user.id, workspaceId: workspace.id, metadata: { name: template.name } });
+  revalidatePath("/templates");
+  return {};
 }

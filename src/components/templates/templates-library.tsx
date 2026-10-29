@@ -2,13 +2,38 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Crown, Eye, PencilRuler, LayoutTemplate, Lock, Plus, Search, Sparkles } from "lucide-react";
+import { Crown, Eye, PencilRuler, Trash2, LayoutTemplate, Lock, Plus, Search, Sparkles } from "lucide-react";
 import { categoryLabels, templateCategories } from "@/components/templates/template-catalog";
 import { TemplateModal, TemplateThumb } from "@/components/templates/template-frame";
 import type { TemplateListItem } from "@/components/templates/template-types";
 import { Badge } from "@/components/ui/badge";
 import { createCampaignFromTemplateAction } from "@/lib/actions/campaign-actions";
 import { customizeTemplateAction } from "@/lib/actions/builder-actions";
+import { deleteTemplateAction } from "@/lib/actions/template-actions";
+
+function DeleteButton({ template }: { template: TemplateListItem }) {
+  const [state, action, pending] = React.useActionState(deleteTemplateAction, undefined);
+  return (
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (!window.confirm(`Delete "${template.name}"? This cannot be undone.`)) e.preventDefault();
+      }}
+    >
+      <input type="hidden" name="templateId" value={template.id} />
+      <button
+        type="submit"
+        disabled={pending}
+        title={state?.error ?? "Delete this template"}
+        aria-label={`Delete ${template.name}`}
+        className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] border border-border bg-surface text-text-secondary transition-colors hover:border-danger/40 hover:bg-danger-surface hover:text-danger disabled:opacity-50"
+      >
+        <Trash2 size={14} />
+      </button>
+      {state?.error && <p role="alert" className="mt-1 max-w-[220px] text-[11.5px] text-danger">{state?.error}</p>}
+    </form>
+  );
+}
 
 type Tier = "ALL" | "FREE" | "PRO";
 
@@ -35,6 +60,7 @@ function UseButton({ template, canUsePro, full = false }: { template: TemplateLi
           <PencilRuler size={14} /> {template.isBuiltIn ? "Customize" : "Edit"}
         </button>
       </form>
+      {!template.isBuiltIn && <DeleteButton template={template} />}
     </div>
   );
 }
