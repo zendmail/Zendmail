@@ -66,6 +66,18 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   });
 }
 
+/** Double opt-in mail: sent in the business's name, but from our verified system address. */
+export async function sendSignupConfirmationEmail(input: { to: string; businessName: string; confirmUrl: string }) {
+  const name = input.businessName.replace(/[\r\n]/g, " ").trim() || "this business";
+  await emailProvider.send({
+    to: input.to,
+    from: formatFrom(name, addressOf(DEFAULT_FROM)),
+    subject: `Confirm your subscription to ${name}`,
+    text: `Please confirm you want to receive emails from ${name}: ${input.confirmUrl}\n\nIf you didn't ask for this, you can ignore this message and nothing will happen.`,
+    html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#10151C"><h2 style="font-size:18px;margin:0 0 12px">Confirm your subscription</h2><p style="font-size:14px;line-height:1.6;margin:0 0 20px">Please confirm you want to receive emails from <strong>${escapeHtml(name)}</strong>.</p><p style="margin:0 0 20px"><a href="${escapeHtml(input.confirmUrl)}" style="background:#0B5FFF;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:600;display:inline-block">Confirm subscription</a></p><p style="font-size:12.5px;color:#5B6472;line-height:1.6;margin:0">If you didn't ask for this, you can ignore this message and nothing will happen.</p></div>`,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Marketing emails
 // ---------------------------------------------------------------------------

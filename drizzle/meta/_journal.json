@@ -141,6 +141,13 @@
       "when": 1793275005281,
       "tag": "0019_autopilot_business_kind",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793348228636,
+      "tag": "0020_signup_forms",
+      "breakpoints": true
     }
   ]
 }
