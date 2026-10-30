@@ -37,6 +37,8 @@ export async function createContactAction(_prev: ActionState, formData: FormData
     return { error: parsed.error.issues[0]?.message ?? "Check the form and try again." };
   }
 
+  const consentConfirmed = formData.get("consentConfirmed") === "on";
+
   const [existing] = await db
     .select({ id: contacts.id })
     .from(contacts)
@@ -57,10 +59,12 @@ export async function createContactAction(_prev: ActionState, formData: FormData
       phone: parsed.data.phone || null,
       status: parsed.data.status,
       source: "manual",
+      // Consent is only ever recorded when the owner explicitly confirms it; it is never assumed.
+      ...(consentConfirmed ? { consentStatus: "GRANTED" as const, consentSource: "MANUAL" as const, consentedAt: new Date() } : {}),
     })
     .returning();
 
-  await recordAuditLog({ action: "contact.created", userId, workspaceId, metadata: { contactId: contact.id } });
+  await recordAuditLog({ action: "contact.created", userId, workspaceId, metadata: { contactId: contact.id, consentConfirmed } });
   await triggerAutomations(workspaceId, contact.id, { type: "CONTACT_CREATED" });
   revalidatePath("/contacts");
   redirect(`/contacts/${contact.id}`);

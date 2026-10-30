@@ -47,6 +47,13 @@ export function NewContactForm() {
           ))}
         </Select>
       </Field>
+      <label className="flex items-start gap-2.5 rounded-[10px] border border-border bg-surface-secondary px-3.5 py-3 text-[12.5px] leading-relaxed text-text-secondary">
+        <input type="checkbox" name="consentConfirmed" className="mt-0.5 h-4 w-4 accent-[var(--color-primary)]" />
+        <span>
+          This person agreed to receive marketing emails from me. Leave this unticked if you are not sure: they can be
+          stored, but automations and campaigns will not email them.
+        </span>
+      </label>
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Adding…" : "Add contact"}
       </Button>
