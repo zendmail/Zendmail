@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { eq } from "drizzle-orm";
-import { MailCheck, MailWarning } from "lucide-react";
+import { ArrowLeft, MailCheck, MailWarning } from "lucide-react";
 import { db } from "@/db/client";
 import { workspaces } from "@/db/schema";
 import { findPendingConfirmation } from "@/lib/signup-forms";
@@ -31,11 +31,17 @@ export default async function ConfirmSubscriptionPage({
 
   let view = result ? messages[result] : undefined;
   let businessName = "this business";
+  let websiteUrl: string | null = null;
 
   const pending = await findPendingConfirmation(token);
   if (pending) {
-    const [workspace] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, pending.workspaceId)).limit(1);
-    if (workspace) businessName = workspace.name;
+    const [workspace] = await db.select({ name: workspaces.name, website: workspaces.website }).from(workspaces).where(eq(workspaces.id, pending.workspaceId)).limit(1);
+    if (workspace) {
+      businessName = workspace.name;
+      // Only ever link to a real http(s) address the owner entered.
+      const site = workspace.website?.trim();
+      if (site) websiteUrl = /^https?:\/\//i.test(site) ? site : `https://${site}`;
+    }
   }
   if (!view && !pending) view = messages.invalid;
   if (!view && pending?.confirmedAt) view = messages.already;
@@ -51,6 +57,11 @@ export default async function ConfirmSubscriptionPage({
             </span>
             <h1 className="text-[19px] font-extrabold text-text-primary">{view.title}</h1>
             <p className="mt-2 text-[14px] leading-relaxed text-text-secondary">{view.body}</p>
+            {websiteUrl && (
+              <a href={websiteUrl} rel="noopener noreferrer" className="mt-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-primary hover:underline">
+                <ArrowLeft size={14} /> Back to {businessName}
+              </a>
+            )}
           </>
         ) : (
           <>

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useActionState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { submitSignupFormAction } from "@/lib/actions/signup-form-actions";
@@ -20,7 +21,13 @@ export type PublicFormProps = {
 const fieldClass =
   "h-11 w-full rounded-[11px] border border-border bg-surface px-3.5 text-[15px] text-text-primary placeholder:text-text-tertiary outline-none transition-[border-color,box-shadow] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]";
 
-export function PublicSignupForm({ publicId, title, description, buttonLabel, collectName, consentText, accentColor, preview = false }: PublicFormProps) {
+/** Remounts the form (clearing its result) when someone wants to sign up another address. */
+export function PublicSignupForm(props: PublicFormProps) {
+  const [round, setRound] = React.useState(0);
+  return <SignupFormBody key={round} {...props} onAgain={() => setRound((n) => n + 1)} />;
+}
+
+function SignupFormBody({ publicId, title, description, buttonLabel, collectName, consentText, accentColor, preview = false, onAgain }: PublicFormProps & { onAgain: () => void }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(submitSignupFormAction, undefined);
   const style = { "--accent": accentColor } as React.CSSProperties;
 
@@ -29,6 +36,9 @@ export function PublicSignupForm({ publicId, title, description, buttonLabel, co
       <div style={style} role="status" className="flex flex-col items-center gap-3 py-6 text-center">
         <CheckCircle2 size={38} style={{ color: accentColor }} />
         <p className="text-[16px] font-semibold text-text-primary">{state.success}</p>
+        <button type="button" onClick={onAgain} className="mt-1 text-[13px] font-semibold hover:underline" style={{ color: accentColor }}>
+          Use a different email
+        </button>
       </div>
     );
   }
