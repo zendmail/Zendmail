@@ -11,6 +11,7 @@ import { listSendingDomains, listIdentities } from "@/lib/sending/domains";
 import { isDomainSendable } from "@/lib/sending/rules";
 import { emailProvider } from "@/lib/email-provider";
 import { canUseCustomDomain, FREE_DAILY_SEND_LIMIT } from "@/lib/sending/plan-rules";
+import { countSharedSendsLast24h } from "@/lib/sending/plan";
 
 export default async function SendingDomainsPage() {
   const user = await getCurrentUser();
@@ -18,7 +19,8 @@ export default async function SendingDomainsPage() {
   const workspace = await getActiveWorkspaceForUser(user.id);
   if (!workspace) redirect("/onboarding/create");
 
-  const [domains, identities] = await Promise.all([listSendingDomains(workspace.id), listIdentities(workspace.id)]);
+  const paid = canUseCustomDomain(workspace.planName);
+  const [domains, identities, sharedSent] = await Promise.all([listSendingDomains(workspace.id), listIdentities(workspace.id), paid ? Promise.resolve(0) : countSharedSendsLast24h(workspace.id)]);
 
   return (
     <div className="mx-auto max-w-[720px] space-y-6">
@@ -54,7 +56,7 @@ export default async function SendingDomainsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-[13.5px] text-text-secondary">
-              On the Free plan your emails go out from Zendmail&apos;s shared sender under your business name, up to {FREE_DAILY_SEND_LIMIT} emails per 24 hours.
+              On the Free plan your emails go out from Zendmail&apos;s shared sender under your business name, up to {FREE_DAILY_SEND_LIMIT} emails per 24 hours ({Math.min(sharedSent, FREE_DAILY_SEND_LIMIT)} used so far).
               Paid plans let you verify your own domain, so mail comes from your brand (for example hello@yourbrand.com) with no daily cap.
             </p>
             <Link href="/workspace/billing?upgrade=domain" className="inline-flex h-9 items-center rounded-[12px] bg-primary px-4 text-sm font-semibold text-primary-text-on hover:bg-primary-hover">

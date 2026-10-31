@@ -21,6 +21,12 @@ export const emailDeliveryEnabled = emailProvider.live;
 const DEFAULT_FROM = process.env.EMAIL_FROM?.trim() || "Zendmail <onboarding@resend.dev>";
 
 /**
+ * True while the platform sender is still Resend's test address. In that mode the provider only delivers to the
+ * Resend account owner, so signup confirmations and campaigns to anyone else are rejected until a domain is verified.
+ */
+export const senderInTestMode = addressOf(DEFAULT_FROM).toLowerCase().endsWith("@resend.dev");
+
+/**
  * Platform-owned domains. An address here is never sent as-is: it goes out from
  * DEFAULT_FROM with the workspace's display name, so no tenant can impersonate
  * another tenant (or Zendmail) on a shared domain.

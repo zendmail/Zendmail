@@ -9,6 +9,8 @@ import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { createSignupFormAction } from "@/lib/actions/signup-form-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { senderInTestMode } from "@/lib/email";
+import { TestModeNotice } from "@/components/sending/test-mode-notice";
 
 export default async function FormsPage() {
   const user = await getCurrentUser();
@@ -35,6 +37,8 @@ export default async function FormsPage() {
           <Button type="submit"><Plus size={15} /> Create form</Button>
         </form>
       </div>
+
+      {senderInTestMode && <TestModeNotice />}
 
       {forms.length === 0 ? (
         <div className="flex flex-col items-center rounded-[18px] border border-dashed border-border bg-surface px-6 py-16 text-center">

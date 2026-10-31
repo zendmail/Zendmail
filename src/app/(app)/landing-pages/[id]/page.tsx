@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyField } from "@/components/forms/copy-field";
 import { LandingSettings } from "@/components/landing/landing-settings";
+import { senderInTestMode } from "@/lib/email";
+import { TestModeNotice } from "@/components/sending/test-mode-notice";
 
 export default async function LandingPageDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -65,6 +67,7 @@ export default async function LandingPageDetail({ params }: { params: Promise<{ 
         </div>
       </div>
 
+      {senderInTestMode && page.formId && <TestModeNotice />}
       {!live && <p className="rounded-[12px] bg-warning-surface px-4 py-3 text-[13px] text-warning">This page is a draft. Visitors can&apos;t see it until you publish.</p>}
       {live && page.formId && attached?.status === "PAUSED" && <p className="rounded-[12px] bg-warning-surface px-4 py-3 text-[13px] text-warning">The attached signup form is paused, so it is hidden on this page. Make it live in Forms.</p>}
 
