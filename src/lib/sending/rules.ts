@@ -89,6 +89,11 @@ export function decideSender(input: {
   fromEmail: string;
   identities: SenderCandidateIdentity[];
   managedDomains: string[];
+  /**
+   * False on the Free plan: the workspace's own domains are ignored and mail goes out from the shared Zendmail
+   * sender under the business's name (the address is never used as-is, so it cannot be spoofed). Default true.
+   */
+  allowCustomDomains?: boolean;
 }): SenderDecision {
   const email = normalizeEmail(input.fromEmail);
   if (!email) {
@@ -100,6 +105,8 @@ export function decideSender(input: {
     };
   }
   const domain = domainOfEmail(email);
+
+  if (input.allowCustomDomains === false) return { ok: true, mode: "ZENDMAIL_MANAGED" };
 
   const identity = input.identities.find(
     (i) => i.workspaceId === input.workspaceId && i.domain.workspaceId === input.workspaceId && i.fromEmail === email

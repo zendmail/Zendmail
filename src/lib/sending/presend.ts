@@ -8,6 +8,7 @@ import { countSendableAudience } from "@/lib/campaigns";
 import { listSenderCandidates, getSendingHealth } from "./domains";
 import { decideSender } from "./rules";
 import { evaluatePreSend, type PreSendReport } from "./presend-rules";
+import { getSendAllowance } from "./plan";
 
 type CampaignForCheck = typeof campaigns.$inferSelect;
 
@@ -16,7 +17,7 @@ type CampaignForCheck = typeof campaigns.$inferSelect;
  * the scheduler, which acts on behalf of whoever scheduled the campaign (already authorized then).
  */
 export async function runPreSendChecks(workspaceId: string, campaign: CampaignForCheck, userId?: string): Promise<PreSendReport> {
-  const [identities, audience, health, memberMaySend, domainRow, concurrent] = await Promise.all([
+  const [identities, audience, health, memberMaySend, domainRow, concurrent, allowance] = await Promise.all([
     listSenderCandidates(workspaceId),
     countSendableAudience(workspaceId, { audienceType: campaign.audienceType, segmentId: campaign.segmentId }),
     getSendingHealth(workspaceId),
@@ -33,16 +34,18 @@ export async function runPreSendChecks(workspaceId: string, campaign: CampaignFo
           sql`(${campaigns.status} = 'SENDING' or (${campaigns.status} = 'SCHEDULED' and ${campaigns.scheduledAt} <= now() + interval '24 hours'))`
         )
       ),
+    getSendAllowance(workspaceId),
   ]);
 
   const [workspaceRow] = await db.select({ postalAddress: workspaces.postalAddress }).from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
   const hasPostalAddress = Boolean(senderPostalAddress(workspaceRow?.postalAddress));
 
-  const sender = decideSender({ workspaceId, fromEmail: campaign.fromEmail, identities, managedDomains: MANAGED_DOMAINS });
+  const sender = decideSender({ workspaceId, fromEmail: campaign.fromEmail, identities, managedDomains: MANAGED_DOMAINS, allowCustomDomains: allowance.limit === null });
 
   return evaluatePreSend({
     hasPostalAddress,
     sender,
+    dailyLimit: allowance.limit === null ? undefined : { limit: allowance.limit, sentLast24h: allowance.sentLast24h },
     replyTo: campaign.replyTo,
     dmarc: domainRow ? { status: domainRow.dmarcStatus, policy: domainRow.dmarcPolicy } : null,
     audience: {

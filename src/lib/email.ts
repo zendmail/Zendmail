@@ -4,6 +4,7 @@ import { sentMessages } from "@/db/schema";
 import { emailProvider } from "./email-provider";
 import { decideSender } from "./sending/rules";
 import { listSenderCandidates } from "./sending/domains";
+import { getSendAllowance } from "./sending/plan";
 
 /** True when emails are really being delivered (a provider key is configured). */
 export const emailDeliveryEnabled = emailProvider.live;
@@ -112,8 +113,20 @@ export async function sendCampaignEmail(input: {
   /** Per-recipient unsubscribe link; added as a List-Unsubscribe header so mail apps show an "Unsubscribe" button. */
   unsubscribeUrl?: string;
 }) {
-  const decision = await resolveWorkspaceSender(input.workspaceId, input.fromEmail);
+  const allowance = await getSendAllowance(input.workspaceId);
+  const identities = await listSenderCandidates(input.workspaceId);
+  const decision = decideSender({
+    workspaceId: input.workspaceId,
+    fromEmail: input.fromEmail,
+    identities,
+    managedDomains: MANAGED_DOMAINS,
+    allowCustomDomains: allowance.limit === null,
+  });
   if (!decision.ok) throw new SenderNotAuthorizedError(decision.reason, decision.resolution);
+  // Safety net behind the pre-send check: the shared sender never exceeds a Free workspace's daily allowance.
+  if (allowance.remaining !== null && allowance.remaining <= 0 && input.source !== "DOMAIN_TEST") {
+    throw new SendLimitError(`The Free plan allows ${allowance.limit} emails per 24 hours. Upgrade to send more.`);
+  }
 
   const sender =
     decision.mode === "WORKSPACE_DOMAIN"
@@ -157,7 +170,11 @@ export async function sendCampaignEmail(input: {
   return { mode: decision.mode, providerMessageId: messageId };
 }
 
-async function resolveWorkspaceSender(workspaceId: string, fromEmail: string) {
-  const identities = await listSenderCandidates(workspaceId);
-  return decideSender({ workspaceId, fromEmail, identities, managedDomains: MANAGED_DOMAINS });
+export class SendLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SendLimitError";
+  }
 }
+
+

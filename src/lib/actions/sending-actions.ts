@@ -22,6 +22,7 @@ import {
   SendingError,
 } from "@/lib/sending/domains";
 import { isDomainSendable } from "@/lib/sending/rules";
+import { canUseCustomDomain } from "@/lib/sending/plan-rules";
 import type { ActionState } from "@/lib/actions/auth-actions";
 
 /**
@@ -45,6 +46,7 @@ async function requireDomainAdmin() {
 }
 
 const DENIED: ActionState = { error: "Only workspace owners and admins can manage sending domains." };
+const UPGRADE: ActionState = { error: "Sending from your own domain is available on paid plans. Upgrade in Billing to use it." };
 
 function toMessage(err: unknown, fallback: string) {
   if (err instanceof SendingError) return err.message;
@@ -56,6 +58,7 @@ function toMessage(err: unknown, fallback: string) {
 export async function addSendingDomainAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const ctx = await requireDomainAdmin();
   if (ctx.denied) return DENIED;
+  if (!canUseCustomDomain(ctx.workspace.planName)) return UPGRADE;
   const limit = await rateLimitByKey("sending-domain-add", ctx.workspace.id, 10, 3600);
   if (!limit.allowed) return { error: limit.message };
 
@@ -117,6 +120,7 @@ const identitySchema = z.object({
 export async function createSendingIdentityAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const ctx = await requireDomainAdmin();
   if (ctx.denied) return DENIED;
+  if (!canUseCustomDomain(ctx.workspace.planName)) return UPGRADE;
   const parsed = identitySchema.safeParse({
     domainId: formData.get("domainId"),
     fromName: formData.get("fromName"),

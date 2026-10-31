@@ -38,6 +38,8 @@ export type PreSendInput = {
   memberMaySend: boolean;
   /** Whether a physical postal address will be printed in the email footer. Omitted = assume yes. */
   hasPostalAddress?: boolean;
+  /** Free plan only: the rolling 24h allowance on the shared sender. Omitted = no daily limit applies. */
+  dailyLimit?: { limit: number; sentLast24h: number };
 };
 
 export type PreSendReport = { canSend: boolean; checks: CheckResult[]; blockers: CheckResult[] };
@@ -82,7 +84,9 @@ export function evaluatePreSend(input: PreSendInput): PreSendReport {
       label: "From identity verified",
       status: "WARN",
       detail: "Sending from the Zendmail-managed sender. Recipients will see Zendmail's domain, not yours.",
-      resolution: "Verify your own domain in Settings → Sending Domains to send as your brand.",
+      resolution: input.dailyLimit
+        ? "Upgrade your plan to send from your own domain."
+        : "Verify your own domain in Settings → Sending Domains to send as your brand.",
       blocking: false,
     });
     for (const [key, label] of [
@@ -102,6 +106,25 @@ export function evaluatePreSend(input: PreSendInput): PreSendReport {
     });
     checks.push(mechanism("dkim", "DKIM", d.dkimStatus));
     checks.push(mechanism("spf", "SPF", d.spfStatus));
+  }
+
+  // --- Free-plan daily allowance (shared sender protection) ---------------
+  if (input.dailyLimit && sender.ok && sender.mode === "ZENDMAIL_MANAGED") {
+    const { limit, sentLast24h } = input.dailyLimit;
+    const remaining = Math.max(0, limit - sentLast24h);
+    const over = input.audience.sendableCount > remaining;
+    checks.push(
+      over
+        ? {
+            key: "daily-limit",
+            label: "Daily sending limit",
+            status: "FAIL",
+            detail: `The Free plan allows ${limit} emails per 24 hours. ${sentLast24h} already sent, ${remaining} left, but this campaign needs ${input.audience.sendableCount}.`,
+            resolution: remaining > 0 ? `Send to a smaller segment (up to ${remaining}), try again later, or upgrade your plan.` : "Try again later, or upgrade your plan to send more.",
+            blocking: true,
+          }
+        : { key: "daily-limit", label: "Daily sending limit", status: "PASS", detail: `${remaining} of ${limit} emails left in the last 24 hours on the Free plan.`, blocking: true }
+    );
   }
 
   // DMARC — recommended, never blocking.
