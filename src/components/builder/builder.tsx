@@ -8,7 +8,7 @@ import { MAX_BLOCKS, type EmailDocument } from "@/lib/email-builder/document";
 import { editorReducer, initEditorState } from "@/lib/email-builder/editor-state";
 import { createSaveQueue, type SaveStatus } from "@/lib/email-builder/save-queue";
 import type { ItemOp } from "@/lib/email-builder/schema";
-import { saveCampaignDocument, saveTemplateDocument, saveCampaignAsTemplateAction, renameTemplateAction } from "@/lib/actions/builder-actions";
+import { saveCampaignDocument, saveTemplateDocument, saveLandingDocument, saveCampaignAsTemplateAction, renameTemplateAction } from "@/lib/actions/builder-actions";
 import { AddPanel } from "./add-panel";
 import { Canvas, type CanvasMessage } from "./canvas";
 import { Outline } from "./outline";
@@ -16,7 +16,7 @@ import { SettingsPanel } from "./settings-panel";
 import { ThemeTab } from "./theme-tab";
 
 type Props = {
-  kind: "campaign" | "template";
+  kind: "campaign" | "template" | "landing";
   id: string;
   name: string;
   initialDoc: EmailDocument;
@@ -52,7 +52,7 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
   const queue = React.useRef<ReturnType<typeof createSaveQueue> | null>(null);
 
   React.useEffect(() => {
-    const save = kind === "campaign" ? saveCampaignDocument : saveTemplateDocument;
+    const save = kind === "campaign" ? saveCampaignDocument : kind === "landing" ? saveLandingDocument : saveTemplateDocument;
     const q = createSaveQueue({
       initialRevision,
       snapshot: () => ({ version: stateRef.current.version, document: stateRef.current.doc }),
@@ -196,7 +196,7 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {tab === "sections" && <Outline blocks={doc.blocks} selectedId={selectedId} onSelect={selectFromList} onMove={(bid, to) => dispatch({ type: "MOVE", id: bid, toIndex: to })} onDuplicate={(bid) => dispatch({ type: "DUPLICATE", id: bid })} onRemove={(bid) => dispatch({ type: "REMOVE", id: bid })} onAdd={() => setTab("add")} />}
-            {tab === "add" && <AddPanel onPick={addBlock} disabled={atLimit} />}
+            {tab === "add" && <AddPanel onPick={addBlock} disabled={atLimit} hide={kind === "landing" ? ["footer"] : []} />}
             {tab === "theme" && <ThemeTab theme={doc.theme} onChange={(patch: Partial<EmailTheme>) => dispatch({ type: "THEME", theme: patch })} onPreset={(t) => dispatch({ type: "REPLACE_THEME", theme: t })} />}
           </div>
         </aside>

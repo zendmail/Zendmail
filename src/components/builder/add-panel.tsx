@@ -4,7 +4,7 @@ import type { EmailBlockType } from "@/db/schema";
 import { BLOCK_BLURBS, CATALOG, labelFor } from "@/lib/email-builder/catalog";
 import { BLOCK_ICONS } from "./block-icons";
 
-export function AddPanel({ onPick, disabled }: { onPick: (type: EmailBlockType) => void; disabled?: boolean }) {
+export function AddPanel({ onPick, disabled, hide = [] }: { onPick: (type: EmailBlockType) => void; disabled?: boolean; hide?: EmailBlockType[] }) {
   return (
     <div className="space-y-5">
       {disabled && <p className="rounded-[8px] bg-warning-surface px-3 py-2 text-[12.5px] text-warning">You have reached the limit of 80 sections.</p>}
@@ -12,7 +12,7 @@ export function AddPanel({ onPick, disabled }: { onPick: (type: EmailBlockType) 
         <section key={group.title}>
           <h3 className="mb-2 px-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-tertiary">{group.title}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {group.types.map((type) => {
+            {group.types.filter((t) => !hide.includes(t)).map((type) => {
               const Icon = BLOCK_ICONS[type];
               return (
                 <button key={type} type="button" disabled={disabled} onClick={() => onPick(type)} className="group flex flex-col items-start gap-2 rounded-[10px] border border-border bg-surface p-2.5 text-left transition-[border-color,box-shadow,transform] duration-150 hover:-translate-y-px hover:border-primary/50 hover:shadow-[var(--shadow-md)] disabled:opacity-50">

@@ -23,6 +23,8 @@ export type RenderOptions = {
   postalAddress?: string | null;
   /** Editor canvas mode: wraps every block with its id and adds the selection overlay script. Never used for sending. */
   editor?: { baseUrl: string } | null;
+  /** Web pages only (landing pages): <title> and meta description. Emails leave these empty. */
+  page?: { title: string; description?: string; below?: string } | null;
 };
 
 // Asset/link base for this render. The editor renders in the browser, where APP_URL is not available, so it
@@ -420,7 +422,8 @@ function renderEmailHtmlInner(blocks: EmailBlock[], options: RenderOptions): str
 <meta name="x-apple-disable-message-reformatting" />
 <meta name="color-scheme" content="light" />
 <meta name="supported-color-schemes" content="light" />
-<title></title>
+<title>${esc(options.page?.title ?? "")}</title>
+${options.page?.description ? `<meta name="description" content="${esc(options.page.description)}" />\n<meta property="og:title" content="${esc(options.page.title)}" />\n<meta property="og:description" content="${esc(options.page.description)}" />` : ""}
 <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 ${fonts ? `<link href="${fonts}" rel="stylesheet" />` : ""}
 <style>
@@ -446,6 +449,7 @@ ${preheader}
 <!--[if mso]><table role="presentation" width="${WIDTH}" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" class="container" width="${WIDTH}" cellpadding="0" cellspacing="0" border="0" bgcolor="${theme.surface}" style="width:${WIDTH}px;max-width:100%;background-color:${theme.surface};border-radius:18px;overflow:hidden;">
 ${body}
+${options.page?.below ? `<tr><td style="padding:0;">${options.page.below}</td></tr>` : ""}
 </table>
 ${postal}
 <!--[if mso]></td></tr></table><![endif]-->

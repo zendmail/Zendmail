@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { campaigns, emailTemplates } from "@/db/schema";
+import { campaigns, emailTemplates, landingPages } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
@@ -103,6 +103,44 @@ export async function saveTemplateDocument(input: unknown): Promise<SaveResult> 
   return existing
     ? fail("conflict", "This template was changed in another tab or window. Reload to get the latest version.")
     : fail("notfound", "This template no longer exists.");
+}
+
+export async function saveLandingDocument(input: unknown): Promise<SaveResult> {
+  const parsed = saveInput.safeParse(input);
+  if (!parsed.success) return fail("invalid", "Could not save: bad request.");
+  const ctx = await context();
+  if (!ctx) return fail("auth", "Your session expired. Sign in again to keep editing.");
+
+  let doc;
+  try {
+    doc = sanitizeDocument(parsed.data.document);
+  } catch (e) {
+    return fail("invalid", e instanceof DocumentError ? e.message : "This page could not be saved.");
+  }
+
+  const now = new Date();
+  const [row] = await db
+    .update(landingPages)
+    .set({ blocks: doc.blocks, theme: doc.theme, contentRevision: sql`${landingPages.contentRevision} + 1`, updatedAt: now })
+    .where(and(
+      eq(landingPages.id, parsed.data.id),
+      eq(landingPages.workspaceId, ctx.workspace.id),
+      eq(landingPages.contentRevision, parsed.data.expectedRevision),
+    ))
+    .returning({ revision: landingPages.contentRevision, publicId: landingPages.publicId });
+  if (row) {
+    revalidatePath(`/p/${row.publicId}`);
+    return { ok: true, revision: row.revision, savedAt: now.toISOString() };
+  }
+
+  const [existing] = await db
+    .select({ id: landingPages.id })
+    .from(landingPages)
+    .where(and(eq(landingPages.id, parsed.data.id), eq(landingPages.workspaceId, ctx.workspace.id)))
+    .limit(1);
+  return existing
+    ? fail("conflict", "This page was changed in another tab or window. Reload to get the latest version.")
+    : fail("notfound", "This page no longer exists.");
 }
 
 /** Renames a workspace template (the editor's title field). */

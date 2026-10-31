@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { emailTemplates } from "@/db/schema";
+import { emailTemplates, landingPages } from "@/db/schema";
 import { getCampaignById } from "@/lib/campaigns";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -14,9 +14,10 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const uploadSchema = z.object({
   campaignId: z.string().uuid().optional(),
   templateId: z.string().uuid().optional(),
+  landingId: z.string().uuid().optional(),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
   fileSize: z.number().int().positive().max(MAX_IMAGE_BYTES),
-}).refine((v) => Boolean(v.campaignId) !== Boolean(v.templateId), "Provide a campaign or a template.");
+}).refine((v) => [v.campaignId, v.templateId, v.landingId].filter(Boolean).length === 1, "Provide a campaign, a template or a landing page.");
 
 const extensionByType = {
   "image/jpeg": "jpg",
@@ -54,6 +55,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "Images can only be added to a draft campaign in this workspace." }, { status: 404 });
     }
     scope = `campaigns/${campaign.id}`;
+  } else if (parsed.data.landingId) {
+    const [page] = await db
+      .select({ id: landingPages.id })
+      .from(landingPages)
+      .where(and(eq(landingPages.id, parsed.data.landingId), eq(landingPages.workspaceId, workspace.id)))
+      .limit(1);
+    if (!page) return Response.json({ error: "Images can only be added to a landing page in this workspace." }, { status: 404 });
+    scope = `landing-pages/${page.id}`;
   } else {
     const [template] = await db
       .select({ id: emailTemplates.id })

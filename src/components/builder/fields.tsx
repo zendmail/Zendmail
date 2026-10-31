@@ -11,7 +11,7 @@ import { uploadCampaignImage } from "@/components/campaigns/upload-image";
 
 type Textish = Exclude<FieldDef, { kind: "number" } | { kind: "toggle" } | { kind: "select" } | { kind: "items" }>;
 
-export type UploadScope = { kind: "campaign" | "template"; id: string };
+export type UploadScope = { kind: "campaign" | "template" | "landing"; id: string };
 
 const input =
   "w-full rounded-[8px] border border-border bg-surface px-2.5 py-[7px] text-[13px] leading-5 text-text-primary outline-none transition-shadow placeholder:text-text-placeholder hover:border-border-strong focus:border-primary focus:shadow-[var(--shadow-focus-primary)]";
