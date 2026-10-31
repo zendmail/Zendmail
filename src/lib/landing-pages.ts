@@ -62,10 +62,12 @@ export function renderLandingHtml(input: {
   title: string;
   description?: string;
   form?: { publicId: string; collectName: boolean } | null;
+  /** This landing page's own public id, passed to the form so signups are credited to the page. */
+  pageId?: string;
   businessName: string;
 }) {
   const below = input.form
-    ? `<div id="signup" style="padding:8px 24px 28px;"><iframe src="${appUrl(`/f/${input.form.publicId}`)}?embed=1" title="Subscribe" width="100%" height="${signupFrameHeight(input.form.collectName)}" style="border:0;display:block;max-width:480px;margin:0 auto;" loading="lazy"></iframe></div>`
+    ? `<div id="signup" style="padding:8px 24px 28px;"><iframe src="${appUrl(`/f/${input.form.publicId}`)}?embed=1${input.pageId ? `&amp;ref=${input.pageId}` : ""}" title="Subscribe" width="100%" height="${signupFrameHeight(input.form.collectName)}" style="border:0;display:block;max-width:480px;margin:0 auto;" loading="lazy"></iframe></div>`
     : "";
   return renderEmailHtml(webBlocks(input.blocks), {
     theme: input.theme,

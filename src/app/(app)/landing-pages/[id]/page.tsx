@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gte } from "drizzle-orm";
 import { ArrowLeft, Copy, ExternalLink, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { db } from "@/db/client";
-import { landingPages, signupForms } from "@/db/schema";
+import { landingPageSignups, landingPages, signupForms } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { landingPublicUrl } from "@/lib/landing-pages";
@@ -16,6 +16,8 @@ import { LandingSettings } from "@/components/landing/landing-settings";
 import { senderInTestMode } from "@/lib/email";
 import { TestModeNotice } from "@/components/sending/test-mode-notice";
 
+const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+
 export default async function LandingPageDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getCurrentUser();
@@ -27,6 +29,12 @@ export default async function LandingPageDetail({ params }: { params: Promise<{ 
   const [page] = await db.select().from(landingPages).where(and(eq(landingPages.id, id), eq(landingPages.workspaceId, workspace.id))).limit(1);
   if (!page) notFound();
   const forms = await db.select({ id: signupForms.id, name: signupForms.name, status: signupForms.status }).from(signupForms).where(eq(signupForms.workspaceId, workspace.id)).orderBy(desc(signupForms.createdAt));
+
+  const since = daysAgo(30);
+  const [[total], [recent]] = await Promise.all([
+    db.select({ n: count() }).from(landingPageSignups).where(eq(landingPageSignups.landingPageId, page.id)),
+    db.select({ n: count() }).from(landingPageSignups).where(and(eq(landingPageSignups.landingPageId, page.id), gte(landingPageSignups.createdAt, since))),
+  ]);
 
   const url = landingPublicUrl(page.publicId);
   const live = page.status === "PUBLISHED";
@@ -70,6 +78,11 @@ export default async function LandingPageDetail({ params }: { params: Promise<{ 
       {senderInTestMode && page.formId && <TestModeNotice />}
       {!live && <p className="rounded-[12px] bg-warning-surface px-4 py-3 text-[13px] text-warning">This page is a draft. Visitors can&apos;t see it until you publish.</p>}
       {live && page.formId && attached?.status === "PAUSED" && <p className="rounded-[12px] bg-warning-surface px-4 py-3 text-[13px] text-warning">The attached signup form is paused, so it is hidden on this page. Make it live in Forms.</p>}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card><CardContent><p className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">Subscribers from this page</p><p className="mt-1 text-[28px] font-extrabold text-text-primary">{total.n}</p></CardContent></Card>
+        <Card><CardContent><p className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">Last 30 days</p><p className="mt-1 text-[28px] font-extrabold text-text-primary">{recent.n}</p></CardContent></Card>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)]">
         <Card>

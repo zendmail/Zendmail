@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db/client";
-import { signupForms, workspaces } from "@/db/schema";
+import { landingPages, signupForms, workspaces } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
 import { recordAuditLog } from "@/lib/audit";
@@ -131,6 +131,13 @@ export async function submitSignupFormAction(_prev: ActionState, formData: FormD
   if (!byEmail.allowed) return { success: ok };
 
   const [workspace] = await db.select({ name: workspaces.name }).from(workspaces).where(eq(workspaces.id, form.workspaceId)).limit(1);
-  await submitSignup({ form, workspaceName: workspace?.name ?? "this business", email: parsed.data.email, firstName: parsed.data.firstName });
+  // Attribute the signup to a landing page only if that page really belongs to this workspace and shows this form.
+  let landingPageId: string | null = null;
+  const ref = String(formData.get("ref") ?? "");
+  if (/^[A-Za-z0-9_-]{8,24}$/.test(ref)) {
+    const [page] = await db.select({ id: landingPages.id }).from(landingPages).where(and(eq(landingPages.publicId, ref), eq(landingPages.workspaceId, form.workspaceId), eq(landingPages.formId, form.id))).limit(1);
+    landingPageId = page?.id ?? null;
+  }
+  await submitSignup({ form, workspaceName: workspace?.name ?? "this business", email: parsed.data.email, firstName: parsed.data.firstName, landingPageId });
   return { success: ok };
 }

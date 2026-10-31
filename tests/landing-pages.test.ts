@@ -47,6 +47,11 @@ describe("landing pages", () => {
     expect(html).not.toContain("{{");
   });
 
+  it("credits signups to the page by passing its id to the form", () => {
+    const html = renderLandingHtml({ blocks: starterBlocks("X"), theme: null, title: "T", form: { publicId: "abcDEF123456", collectName: false }, pageId: "PAGEid123456", businessName: "X" });
+    expect(html).toContain("/f/abcDEF123456?embed=1&amp;ref=PAGEid123456");
+  });
+
   it("omits the form area when no form is attached", () => {
     const html = renderLandingHtml({ blocks: starterBlocks("X"), theme: null, title: "T", form: null, businessName: "X" });
     expect(html).not.toContain("<iframe");

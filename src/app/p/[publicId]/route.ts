@@ -23,6 +23,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pub
     theme: parseTheme(page.theme),
     title: page.seoTitle || page.name,
     description: page.seoDescription || undefined,
+    pageId: page.publicId,
     form: form && form.status === "ACTIVE" ? form : null,
     businessName: workspace?.name ?? "",
   });

@@ -12,10 +12,10 @@ export default async function PublicSignupPage({
   searchParams,
 }: {
   params: Promise<{ publicId: string }>;
-  searchParams: Promise<{ embed?: string }>;
+  searchParams: Promise<{ embed?: string; ref?: string }>;
 }) {
   const { publicId } = await params;
-  const { embed } = await searchParams;
+  const { embed, ref } = await searchParams;
   const embedded = embed === "1";
   const form = await getPublicForm(publicId);
   const [workspace] = form
@@ -56,6 +56,7 @@ export default async function PublicSignupPage({
       collectName={form.collectName}
       consentText={form.consentText}
       accentColor={form.accentColor}
+      refId={typeof ref === "string" && /^[A-Za-z0-9_-]{8,24}$/.test(ref) ? ref : undefined}
     />
   );
 }

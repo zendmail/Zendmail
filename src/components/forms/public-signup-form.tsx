@@ -16,6 +16,8 @@ export type PublicFormProps = {
   accentColor: string;
   /** Preview in the dashboard: renders the same form but cannot submit. */
   preview?: boolean;
+  /** Public id of the landing page showing this form (for per-page results). */
+  refId?: string;
 };
 
 const fieldClass =
@@ -27,7 +29,7 @@ export function PublicSignupForm(props: PublicFormProps) {
   return <SignupFormBody key={round} {...props} onAgain={() => setRound((n) => n + 1)} />;
 }
 
-function SignupFormBody({ publicId, title, description, buttonLabel, collectName, consentText, accentColor, preview = false, onAgain }: PublicFormProps & { onAgain: () => void }) {
+function SignupFormBody({ publicId, title, description, buttonLabel, collectName, consentText, accentColor, preview = false, refId, onAgain }: PublicFormProps & { onAgain: () => void }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(submitSignupFormAction, undefined);
   const style = { "--accent": accentColor } as React.CSSProperties;
 
@@ -56,6 +58,7 @@ function SignupFormBody({ publicId, title, description, buttonLabel, collectName
       </div>
 
       <input type="hidden" name="publicId" value={publicId} />
+      {refId && <input type="hidden" name="ref" value={refId} />}
       {/* Honeypot: hidden from people, tempting for bots. */}
       <div aria-hidden="true" style={{ position: "absolute", left: "-10000px", width: 1, height: 1, overflow: "hidden" }}>
         <label>

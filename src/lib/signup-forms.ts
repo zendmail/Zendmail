@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
-import { contacts, signupConfirmations, signupForms, suppressionEntries } from "@/db/schema";
+import { contacts, landingPageSignups, signupConfirmations, signupForms, suppressionEntries } from "@/db/schema";
 import { recordAuditLog } from "@/lib/audit";
 import { triggerAutomations } from "@/lib/automation-engine";
 import { sendSignupConfirmationEmail } from "@/lib/email";
@@ -65,7 +65,7 @@ export type CompleteResult = "SUBSCRIBED" | "ALREADY" | "BLOCKED";
  * Turns a verified signup into a real contact with recorded consent, then starts the welcome automation.
  * People who unsubscribed, bounced, complained or withdrew consent are never silently re-added.
  */
-export async function completeSignup(input: { form: Form; email: string; firstName?: string | null; consentText: string }): Promise<CompleteResult> {
+export async function completeSignup(input: { form: Form; email: string; firstName?: string | null; consentText: string; landingPageId?: string | null }): Promise<CompleteResult> {
   const { form } = input;
   const email = input.email.toLowerCase();
 
@@ -117,6 +117,14 @@ export async function completeSignup(input: { form: Form; email: string; firstNa
     contactId = created.id;
   }
 
+  if (input.landingPageId) {
+    try {
+      await db.insert(landingPageSignups).values({ landingPageId: input.landingPageId, contactId }).onConflictDoNothing();
+    } catch {
+      /* the page was deleted meanwhile; the subscription itself must still succeed */
+    }
+  }
+
   await recordAuditLog({ action: "contact.signup", workspaceId: form.workspaceId, metadata: { contactId, formId: form.id, doubleOptIn: form.doubleOptIn, consentText: input.consentText } });
   await triggerAutomations(form.workspaceId, contactId, { type: "CONTACT_CREATED" });
   return "SUBSCRIBED";
@@ -126,12 +134,12 @@ export async function completeSignup(input: { form: Form; email: string; firstNa
  * Handles a public submission. The caller always shows the same "check your inbox" style message, so the response
  * never reveals whether an address is already a contact.
  */
-export async function submitSignup(input: { form: Form; workspaceName: string; email: string; firstName?: string | null }) {
+export async function submitSignup(input: { form: Form; workspaceName: string; email: string; firstName?: string | null; landingPageId?: string | null }) {
   const { form } = input;
   const email = input.email.toLowerCase();
 
   if (!form.doubleOptIn) {
-    await completeSignup({ form, email, firstName: input.firstName, consentText: form.consentText });
+    await completeSignup({ form, email, firstName: input.firstName, consentText: form.consentText, landingPageId: input.landingPageId });
     return;
   }
 
@@ -151,6 +159,7 @@ export async function submitSignup(input: { form: Form; workspaceName: string; e
     email,
     firstName: input.firstName || null,
     consentText: form.consentText,
+    landingPageId: input.landingPageId ?? null,
     tokenHash: hashToken(token),
     expiresAt: new Date(Date.now() + CONFIRM_TTL_MS),
   });
@@ -191,7 +200,7 @@ export async function confirmSignup(token: string): Promise<{ outcome: ConfirmOu
     .returning({ id: signupConfirmations.id });
   if (claimed.length === 0) return { outcome: "ALREADY" };
 
-  const result = await completeSignup({ form, email: row.email, firstName: row.firstName, consentText: row.consentText });
+  const result = await completeSignup({ form, email: row.email, firstName: row.firstName, consentText: row.consentText, landingPageId: row.landingPageId });
   if (result === "BLOCKED") return { outcome: "BLOCKED" };
   return { outcome: result === "ALREADY" ? "ALREADY" : "CONFIRMED" };
 }

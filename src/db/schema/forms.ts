@@ -47,6 +47,8 @@ export const signupConfirmations = pgTable(
     tokenHash: text("token_hash").notNull(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    // The landing page the visitor signed up on (a soft reference, so a deleted page never blocks a signup).
+    landingPageId: uuid("landing_page_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

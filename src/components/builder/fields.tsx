@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, Bold, ImageUp, Italic, Link2, LoaderCircle, Plus, T
 import type { EmailBlock, EmailTheme } from "@/db/schema";
 import type { FieldDef } from "@/lib/email-builder/schema";
 import type { ItemOp } from "@/lib/email-builder/schema";
-import { ART_NAMES, resolveImageUrl } from "@/lib/email-builder/assets";
+import { ART_NAMES, iconAssetUrl, resolveImageUrl } from "@/lib/email-builder/assets";
 import { COLOR_TOKENS, TOKEN_LABELS, isToken, normalizeHex, resolveColor, resolveToken } from "@/lib/email-builder/theme";
 import { uploadCampaignImage } from "@/components/campaigns/upload-image";
 
@@ -197,7 +197,8 @@ export function FieldList({ fields, block, theme, scope, d, basePath = "" }: { f
 function ItemsField({ def, block, theme, scope, d }: { def: Extract<FieldDef, { kind: "items" }>; block: EmailBlock; theme: EmailTheme; scope: UploadScope; d: Dispatchers }) {
   const items = (getPath(block, def.key) as Record<string, unknown>[] | undefined) ?? [];
   const [open, setOpen] = React.useState<number | null>(items.length === 1 ? 0 : null);
-  const titleOf = (item: Record<string, unknown>, i: number) => String(item.title ?? item.label ?? item.name ?? item.quote ?? item.network ?? `${def.itemLabel} ${i + 1}`).slice(0, 40) || `${def.itemLabel} ${i + 1}`;
+  const networkName = (n: string) => (n === "x" ? "X (Twitter)" : n[0].toUpperCase() + n.slice(1));
+  const titleOf = (item: Record<string, unknown>, i: number) => typeof item.network === "string" && item.network ? networkName(item.network) : String(item.title ?? item.label ?? item.name ?? item.quote ?? item.network ?? `${def.itemLabel} ${i + 1}`).slice(0, 40) || `${def.itemLabel} ${i + 1}`;
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
@@ -208,6 +209,10 @@ function ItemsField({ def, block, theme, scope, d }: { def: Extract<FieldDef, { 
         {items.map((item, i) => (
           <li key={i} className="border-b border-border last:border-b-0">
             <div className="flex items-center gap-1 px-2.5 py-1.5">
+              {typeof item.network === "string" && item.network && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={iconAssetUrl(item.network, theme.primary, "#FFFFFF", 44)} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0" />
+              )}
               <button type="button" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)} className="min-w-0 flex-1 truncate text-left text-[12.5px] font-medium text-text-primary">{titleOf(item, i)}</button>
               <IconBtn label="Move up" disabled={i === 0} onClick={() => d.itemOp(def.key, "up", i)}><ArrowUp size={13} /></IconBtn>
               <IconBtn label="Move down" disabled={i === items.length - 1} onClick={() => d.itemOp(def.key, "down", i)}><ArrowDown size={13} /></IconBtn>

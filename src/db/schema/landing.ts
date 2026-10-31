@@ -1,4 +1,5 @@
 import { pgTable, uuid, text, timestamp, integer, jsonb, pgEnum, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { contacts } from "./contacts";
 import { workspaces } from "./workspace";
 import { signupForms } from "./forms";
 import type { EmailBlock, EmailTheme } from "./campaigns";
@@ -32,5 +33,20 @@ export const landingPages = pgTable(
   (table) => [
     uniqueIndex("landing_page_public_id_idx").on(table.publicId),
     index("landing_page_workspace_idx").on(table.workspaceId),
+  ]
+);
+
+/** One row per contact who subscribed through a landing page, so each page can show its own results. */
+export const landingPageSignups = pgTable(
+  "landing_page_signups",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    landingPageId: uuid("landing_page_id").notNull().references(() => landingPages.id, { onDelete: "cascade" }),
+    contactId: uuid("contact_id").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("landing_page_signup_unique").on(table.landingPageId, table.contactId),
+    index("landing_page_signup_page_idx").on(table.landingPageId, table.createdAt),
   ]
 );
