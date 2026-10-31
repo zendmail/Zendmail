@@ -92,7 +92,7 @@ export const automationEvents = pgTable("automation_events", {
     .notNull()
     .references(() => automationRuns.id, { onDelete: "cascade" }),
   stepIndex: integer("step_index").notNull(),
-  type: text("type").notNull(), // "step_completed" | "run_completed" | "run_failed"
+  type: text("type").notNull(), // "step_completed" | "run_completed" | "run_failed" | "step_deferred"
   metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

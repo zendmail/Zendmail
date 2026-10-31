@@ -19,7 +19,7 @@ import { contactUnsubscribeToken } from "./unsubscribe-token";
 import { appUrl } from "./app-url";
 import { renderBlocksToHtml, renderBlocksToText } from "./email-blocks";
 import { applyMergeTags, buildVars } from "./email-builder/merge";
-import { sendCampaignEmail } from "./email";
+import { sendCampaignEmail, SendLimitError } from "./email";
 import { getDefaultSender } from "./sending/domains";
 import type { EmailBlock } from "@/db/schema";
 
@@ -138,6 +138,16 @@ async function advanceRun(runId: string) {
     try {
       await executeStep(run.contactId, step.type, step.config);
     } catch (err) {
+      // Free-plan daily allowance used up: this is not a failure. Hold the run on the same step and try again in an hour,
+      // when part of the rolling 24h allowance has freed up, so the contact still gets the email.
+      if (err instanceof SendLimitError) {
+        await db
+          .update(automationRuns)
+          .set({ status: "WAITING", nextRunAt: new Date(Date.now() + 60 * 60 * 1000), updatedAt: new Date() })
+          .where(eq(automationRuns.id, runId));
+        await db.insert(automationEvents).values({ runId, stepIndex: run.currentStepIndex, type: "step_deferred", metadata: { reason: err.message } });
+        return;
+      }
       await db.update(automationRuns).set({ status: "FAILED", updatedAt: new Date() }).where(eq(automationRuns.id, runId));
       await db.insert(automationEvents).values({
         runId,
