@@ -1,5 +1,6 @@
 import type { EmailBlock, EmailTheme } from "@/db/schema";
 import { createDefaultBlock, newBlockId } from "../email-blocks";
+import { withExplicitSocialStyle } from "./social-style";
 import { MAX_BLOCKS, type EmailDocument } from "./document";
 import { setBlockField } from "./catalog";
 import { applyItemOp, type ItemOp } from "./schema";
@@ -38,7 +39,7 @@ export type EditorAction =
 const HISTORY_LIMIT = 100;
 
 export function initEditorState(doc: EmailDocument): EditorState {
-  return { doc, selectedId: null, past: [], future: [], coalesceKey: null, version: 0 };
+  return { doc: { ...doc, blocks: withExplicitSocialStyle(doc.blocks) }, selectedId: null, past: [], future: [], coalesceKey: null, version: 0 };
 }
 
 function commit(state: EditorState, doc: EmailDocument, coalesceKey: string | null, selectedId: string | null = state.selectedId): EditorState {

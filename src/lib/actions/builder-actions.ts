@@ -127,11 +127,11 @@ export async function saveLandingDocument(input: unknown): Promise<SaveResult> {
       eq(landingPages.workspaceId, ctx.workspace.id),
       eq(landingPages.contentRevision, parsed.data.expectedRevision),
     ))
-    .returning({ revision: landingPages.contentRevision, publicId: landingPages.publicId });
-  if (row) {
-    revalidatePath(`/p/${row.publicId}`);
-    return { ok: true, revision: row.revision, savedAt: now.toISOString() };
-  }
+    .returning({ revision: landingPages.contentRevision });
+  // No revalidatePath here: a server action that revalidates re-renders the open editor page, which remounts it and
+  // throws away the selection, scroll position and undo history on every autosave. The public page is never cached
+  // by Next (only briefly by the CDN), so it needs no revalidation.
+  if (row) return { ok: true, revision: row.revision, savedAt: now.toISOString() };
 
   const [existing] = await db
     .select({ id: landingPages.id })

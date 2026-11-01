@@ -3,6 +3,7 @@ import { appUrl as serverAppUrl } from "../app-url";
 import { EDITOR_SCRIPT } from "./editor-frame-script";
 import { applyMergeTags, SAMPLE_VARS, type MergeVars } from "./merge";
 import { badgeAssetUrl, iconAssetUrl, resolveImageUrl, waveAssetUrl } from "./assets";
+import { socialIconStyle } from "./social-style";
 import { contrastOn, DEFAULT_THEME, fontStack, googleFontsHref, mix, parseTheme, resolveColor } from "./theme";
 
 /**
@@ -192,7 +193,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
     case "social": {
       const bg = c.color(block.bg, surface);
       // Original brand colours unless the block was explicitly set to a custom colour (older blocks that stored one keep it).
-      const brand = (block.iconStyle ?? (block.iconBg ? "color" : "brand")) === "brand";
+      const brand = socialIconStyle(block) === "brand";
       const iconBg = c.color(block.iconBg, bg === t.primary ? contrastOn(bg) : t.primary);
       const iconFg = contrastOn(iconBg);
       const cells = block.links
