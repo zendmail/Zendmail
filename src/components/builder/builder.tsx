@@ -106,6 +106,8 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
     lastSelected.current = selectedId;
   }, [selectedId, state.coalesceKey, reveal]);
 
+  const onInlineEdit = React.useCallback((blockId: string, path: string, value: string) => dispatch({ type: "FIELD", id: blockId, path, value }), []);
+
   const onCanvas = React.useCallback((m: CanvasMessage) => {
     if (m.zm === "select") { select(m.id); if (m.id) setMobile("settings"); }
     else if (m.zm === "history") dispatch({ type: m.dir === "undo" ? "UNDO" : "REDO" });
@@ -202,7 +204,7 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
         </aside>
 
         <main className={`${mobile === "preview" ? "block" : "hidden"} min-w-0 flex-1 bg-[#E9EDF4] dark:bg-[#0E1018] lg:block`} onClick={(e) => { if (e.target === e.currentTarget) select(null); }}>
-          <Canvas doc={doc} selectedId={selectedId} scrollTarget={scrollTarget} device={device} onMessage={onCanvas} />
+          <Canvas doc={doc} selectedId={selectedId} scrollTarget={scrollTarget} device={device} onMessage={onCanvas} onInlineEdit={onInlineEdit} />
         </main>
 
         <aside className={`${mobile === "settings" ? "block" : "hidden"} w-full shrink-0 border-l border-border bg-surface lg:block lg:w-[336px]`}>

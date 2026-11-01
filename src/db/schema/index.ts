@@ -11,3 +11,4 @@ export * from "./sending";
 export * from "./autopilot";
 export * from "./forms";
 export * from "./landing";
+export * from "./uploads";

@@ -65,8 +65,8 @@ export function resolveImageUrl(url: string | undefined | null, theme: EmailThem
 
 const strip = (hex: string) => hex.replace("#", "");
 
-export function iconAssetUrl(name: string, bg: string, fg: string, size = 44, shape: "circle" | "rounded" | "none" = "circle") {
-  return `/api/email-assets/icon?name=${encodeURIComponent(name)}&bg=${strip(bg)}&fg=${strip(fg)}&size=${size}&shape=${shape}`;
+export function iconAssetUrl(name: string, bg: string, fg: string, size = 44, shape: "circle" | "rounded" | "none" = "circle", brand = false) {
+  return `/api/email-assets/icon?name=${encodeURIComponent(name)}&bg=${strip(bg)}&fg=${strip(fg)}&size=${size}&shape=${shape}${brand ? "&brand=1" : ""}`;
 }
 
 export function badgeAssetUrl(text: string, bg: string, fg: string, size = 40) {

@@ -124,8 +124,8 @@ function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: {
   return `<img class="fluid" src="${esc(src)}" alt="${esc(alt ?? "")}" width="${maxWidth}" style="display:block;width:100%;max-width:${maxWidth}px;height:auto;border:0;outline:none;text-decoration:none;border-radius:${radius}px;margin:${margin};" />`;
 }
 
-function icon(c: Ctx, name: string, bg: string, fg: string, size = 44, shape: "circle" | "rounded" | "none" = "circle") {
-  return `<img src="${esc(appUrl(iconAssetUrl(name, bg, fg, size, shape)))}" alt="" width="${size}" height="${size}" style="display:block;border:0;width:${size}px;height:${size}px;" />`;
+function icon(c: Ctx, name: string, bg: string, fg: string, size = 44, shape: "circle" | "rounded" | "none" = "circle", brand = false) {
+  return `<img src="${esc(appUrl(iconAssetUrl(name, bg, fg, size, shape, brand)))}" alt="" width="${size}" height="${size}" style="display:block;border:0;width:${size}px;height:${size}px;" />`;
 }
 
 function stars(rating: number | undefined) {
@@ -191,10 +191,12 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
     }
     case "social": {
       const bg = c.color(block.bg, surface);
+      // Original brand colours unless the block was explicitly set to a custom colour (older blocks that stored one keep it).
+      const brand = (block.iconStyle ?? (block.iconBg ? "color" : "brand")) === "brand";
       const iconBg = c.color(block.iconBg, bg === t.primary ? contrastOn(bg) : t.primary);
       const iconFg = contrastOn(iconBg);
       const cells = block.links
-        .map((l) => `<td style="padding:0 6px;"><a href="${esc(c.link(l.url))}" target="_blank" style="text-decoration:none;">${icon(c, l.network, iconBg, iconFg, 36)}</a></td>`)
+        .map((l) => `<td style="padding:0 6px;"><a href="${esc(c.link(l.url))}" target="_blank" style="text-decoration:none;">${icon(c, l.network, iconBg, iconFg, 36, "circle", brand)}</a></td>`)
         .join("");
       return section(bg, `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>${cells}</tr></table>`, { top: 18, bottom: 18, align: "center" });
     }

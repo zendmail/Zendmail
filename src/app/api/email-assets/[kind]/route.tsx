@@ -40,6 +40,16 @@ const BRAND: Record<string, (fg: string) => string> = {
   linkedin: (fg) => `<rect x="4.4" y="9.4" width="3.2" height="10" fill="${fg}"/><circle cx="6" cy="5.9" r="1.9" fill="${fg}"/><path d="M10.2 9.4h3v1.4c.5-.9 1.6-1.6 3.1-1.6 2.6 0 3.4 1.6 3.4 4v6.2h-3.2v-5.4c0-1.2-.3-2-1.5-2-1.3 0-1.8.9-1.8 2.1v5.3h-3z" fill="${fg}"/>`,
 };
 
+// The networks' own colours (white glyph on the brand background). Instagram's is a gradient.
+const BRAND_BG: Record<string, string> = {
+  facebook: "#1877F2",
+  instagram: "linear-gradient(45deg, #F58529 0%, #DD2A7B 45%, #8134AF 75%, #515BD4 100%)",
+  x: "#000000",
+  tiktok: "#000000",
+  youtube: "#FF0000",
+  linkedin: "#0A66C2",
+};
+
 function glyphSvg(name: string, fg: string): string | null {
   const brand = BRAND[name];
   if (brand) return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">${brand(fg)}</svg>`;
@@ -66,11 +76,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ kind
     const fg = colorParam(sp, "fg", "#FFFFFF");
     const bg = colorParam(sp, "bg", "#0B5FFF");
     const shape = sp.get("shape") === "rounded" ? "rounded" : sp.get("shape") === "none" ? "none" : "circle";
-    const glyph = glyphSvg(name, fg);
+    const useBrand = sp.get("brand") === "1" && name in BRAND_BG;
+    const glyph = glyphSvg(name, useBrand ? "#FFFFFF" : fg);
     if (!glyph) return new Response("Unknown icon", { status: 400 });
     const inner = shape === "none" ? px : Math.round(px * 0.5);
     return png(
-      <div style={{ width: px, height: px, display: "flex", alignItems: "center", justifyContent: "center", background: shape === "none" ? "transparent" : bg, borderRadius: shape === "circle" ? px / 2 : shape === "rounded" ? px * 0.28 : 0 }}>
+      <div style={{ width: px, height: px, display: "flex", alignItems: "center", justifyContent: "center", background: shape === "none" ? "transparent" : useBrand ? BRAND_BG[name] : bg, borderRadius: shape === "circle" ? px / 2 : shape === "rounded" ? px * 0.28 : 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={dataUri(glyph)} width={inner} height={inner} alt="" />
       </div>,

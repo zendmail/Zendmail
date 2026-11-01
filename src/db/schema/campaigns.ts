@@ -101,7 +101,7 @@ export type EmailBlock =
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; sectionBg?: BlockColor;
     }
   | { id: string; type: "wave"; shape: "wave" | "curve" | "dip" | "slant" | "drip" | "scallop"; top: BlockColor; bottom: BlockColor; height?: number }
-  | { id: string; type: "social"; links: { network: EmailSocialNetwork; url: string }[]; bg?: BlockColor; color?: BlockColor; iconBg?: BlockColor }
+  | { id: string; type: "social"; links: { network: EmailSocialNetwork; url: string }[]; bg?: BlockColor; color?: BlockColor; iconBg?: BlockColor; iconStyle?: "brand" | "color" }
   | { id: string; type: "links"; links: EmailLinkItem[]; style: "inline" | "pills"; bg?: BlockColor; color?: BlockColor };
 
 export type EmailBlockType = EmailBlock["type"];

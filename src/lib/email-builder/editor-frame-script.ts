@@ -85,7 +85,62 @@ export const EDITOR_SCRIPT = String.raw`
     var id = b ? b.getAttribute("data-block-id") : null;
     selectedId = id; layout(); post({ zm: "select", id: id });
   }, true);
+  var editing = null;
+  function shownText(node) {
+    var clone = node.cloneNode(true);
+    Array.prototype.slice.call(clone.querySelectorAll("br")).forEach(function (b) { b.replaceWith("\n"); });
+    return clone.textContent || "";
+  }
+  function stopEditing(commit) {
+    if (!editing) return;
+    var cur = editing; editing = null;
+    cur.node.removeAttribute("contenteditable"); cur.node.style.outline = ""; cur.node.style.cursor = "";
+    cur.node.removeEventListener("blur", cur.onBlur);
+    cur.node.removeEventListener("keydown", cur.onKey);
+    if (!commit) { cur.node.innerHTML = cur.before; return; }
+    var value = cur.rich ? cur.node.innerHTML : shownText(cur.node);
+    post({ zm: "inlineCommit", id: cur.id, original: cur.originalText, rich: cur.rich, text: value });
+  }
+  var pending = null;
+  document.addEventListener("dblclick", function (e) {
+    var b = blockOf(e.target);
+    if (!b || (e.target.closest && e.target.closest(".zm-bar"))) return;
+    e.preventDefault();
+    stopEditing(true);
+    var id = b.getAttribute("data-block-id"), type = b.getAttribute("data-block-type");
+    selectedId = id; layout(); post({ zm: "select", id: id });
+    var candidates = [], n = e.target;
+    while (n && n !== b && candidates.length < 6) {
+      if (n.nodeType === 1 && (n.textContent || "").trim()) candidates.push(n);
+      n = n.parentNode;
+    }
+    if (type === "text") {
+      var wrap = b.querySelector("td > div");
+      pending = { id: id, nodes: wrap ? [wrap] : [], rich: true };
+      if (wrap) post({ zm: "inlineStart", id: id, texts: [] , rich: true });
+      return;
+    }
+    pending = { id: id, nodes: candidates, rich: false };
+    post({ zm: "inlineStart", id: id, texts: candidates.map(shownText), rich: false });
+  });
+  function beginEdit(node, rich, id) {
+    var before = node.innerHTML, originalText = shownText(node);
+    var onBlur = function () { stopEditing(true); };
+    var onKey = function (ev) {
+      ev.stopPropagation();
+      if (ev.key === "Escape") { ev.preventDefault(); stopEditing(false); }
+      else if (ev.key === "Enter" && !ev.shiftKey && !rich) { ev.preventDefault(); stopEditing(true); }
+    };
+    node.setAttribute("contenteditable", rich ? "true" : "plaintext-only");
+    node.style.outline = "2px dashed " + ACCENT; node.style.cursor = "text";
+    node.addEventListener("blur", onBlur); node.addEventListener("keydown", onKey);
+    editing = { node: node, rich: rich, id: id, before: before, originalText: originalText, onBlur: onBlur, onKey: onKey };
+    node.focus();
+    var range = document.createRange(); range.selectNodeContents(node);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  }
   document.addEventListener("keydown", function (e) {
+    if (editing) return;
     if (e.key === "Escape") { selectedId = null; layout(); post({ zm: "select", id: null }); }
     if ((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "Z")) { e.preventDefault(); post({ zm: "history", dir: e.shiftKey ? "redo" : "undo" }); }
     if (selectedId && (e.key === "Delete" || e.key === "Backspace")) { e.preventDefault(); post({ zm: "action", action: "remove", id: selectedId }); }
@@ -98,9 +153,14 @@ export const EDITOR_SCRIPT = String.raw`
   window.addEventListener("message", function (e) {
     if (e.source !== parentWin) return;
     var m = e.data || {};
+    if (m.zm === "inlineBegin" && pending && pending.id === m.id) {
+      var node = pending.nodes[m.index || 0];
+      if (node) beginEdit(node, !!m.rich, m.id);
+      pending = null;
+    }
     if (m.zm === "select") { selectedId = m.id || null; layout(); }
     if (m.zm === "scrollTo") { var n = find(m.id); if (n) { var r = rect(n); window.scrollTo({ top: Math.max(0, r.top - 60), behavior: "smooth" }); } }
-    if (m.zm === "patch" && typeof m.html === "string") {
+    if (m.zm === "patch" && typeof m.html === "string" && !editing) {
       // Swap the email content in place (no iframe reload, so no flash and the scroll position is kept).
       var next = new DOMParser().parseFromString(m.html, "text/html");
       var keep = function (n) { return n.nodeType === 1 && (n.classList.contains("zm-box") || n.classList.contains("zm-chip") || n.classList.contains("zm-bar") || n.tagName === "SCRIPT"); };

@@ -187,7 +187,8 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
         defaultItem: { network: "instagram", url: "https://instagram.com" },
         fields: [{ key: "network", label: "Network", kind: "select", options: NETWORKS.map((n) => ({ value: n, label: n === "x" ? "X (Twitter)" : n[0].toUpperCase() + n.slice(1) })) }, { key: "url", label: "Profile link", kind: "url" }],
       },
-      color("bg", "Background"), color("iconBg", "Icon colour"),
+      { key: "iconStyle", label: "Icon style", kind: "select", options: [{ value: "brand", label: "Original brand colours" }, { value: "color", label: "My own colour" }] },
+      color("bg", "Background"), color("iconBg", "Your icon colour (when style is “My own colour”)"),
     ],
   },
   links: {

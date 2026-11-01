@@ -211,7 +211,7 @@ function ItemsField({ def, block, theme, scope, d }: { def: Extract<FieldDef, { 
             <div className="flex items-center gap-1 px-2.5 py-1.5">
               {typeof item.network === "string" && item.network && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={iconAssetUrl(item.network, theme.primary, "#FFFFFF", 44)} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0" />
+                <img src={iconAssetUrl(item.network, theme.primary, "#FFFFFF", 44, "circle", true)} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0" />
               )}
               <button type="button" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)} className="min-w-0 flex-1 truncate text-left text-[12.5px] font-medium text-text-primary">{titleOf(item, i)}</button>
               <IconBtn label="Move up" disabled={i === 0} onClick={() => d.itemOp(def.key, "up", i)}><ArrowUp size={13} /></IconBtn>

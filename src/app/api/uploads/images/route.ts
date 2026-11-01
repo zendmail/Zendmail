@@ -4,20 +4,13 @@ import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/session";
 import { getActiveWorkspaceForUser } from "@/lib/workspace";
-import { and, eq } from "drizzle-orm";
-import { db } from "@/db/client";
-import { emailTemplates, landingPages } from "@/db/schema";
-import { getCampaignById } from "@/lib/campaigns";
 import { rateLimit } from "@/lib/rate-limit";
+import { MAX_IMAGE_BYTES, resolveUploadScope, s3Configured, UploadError, uploadScopeSchema } from "@/lib/uploads";
 
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const uploadSchema = z.object({
-  campaignId: z.string().uuid().optional(),
-  templateId: z.string().uuid().optional(),
-  landingId: z.string().uuid().optional(),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
   fileSize: z.number().int().positive().max(MAX_IMAGE_BYTES),
-}).refine((v) => [v.campaignId, v.templateId, v.landingId].filter(Boolean).length === 1, "Provide a campaign, a template or a landing page.");
+}).and(uploadScopeSchema);
 
 const extensionByType = {
   "image/jpeg": "jpg",
@@ -49,29 +42,15 @@ export async function POST(request: Request) {
   }
 
   let scope: string;
-  if (parsed.data.campaignId) {
-    const campaign = await getCampaignById(workspace.id, parsed.data.campaignId);
-    if (!campaign || campaign.status !== "DRAFT") {
-      return Response.json({ error: "Images can only be added to a draft campaign in this workspace." }, { status: 404 });
-    }
-    scope = `campaigns/${campaign.id}`;
-  } else if (parsed.data.landingId) {
-    const [page] = await db
-      .select({ id: landingPages.id })
-      .from(landingPages)
-      .where(and(eq(landingPages.id, parsed.data.landingId), eq(landingPages.workspaceId, workspace.id)))
-      .limit(1);
-    if (!page) return Response.json({ error: "Images can only be added to a landing page in this workspace." }, { status: 404 });
-    scope = `landing-pages/${page.id}`;
-  } else {
-    const [template] = await db
-      .select({ id: emailTemplates.id })
-      .from(emailTemplates)
-      .where(and(eq(emailTemplates.id, parsed.data.templateId!), eq(emailTemplates.workspaceId, workspace.id)))
-      .limit(1);
-    if (!template) return Response.json({ error: "Images can only be added to a template in this workspace." }, { status: 404 });
-    scope = `templates/${template.id}`;
+  try {
+    scope = await resolveUploadScope(workspace.id, parsed.data);
+  } catch (error) {
+    if (error instanceof UploadError) return Response.json({ error: error.message }, { status: error.status });
+    return Response.json({ error: "Could not prepare the upload. Please try again." }, { status: 500 });
   }
+
+  // No object storage configured: tell the browser to send the file to us and we keep it in the database instead.
+  if (!s3Configured()) return Response.json({ direct: true });
 
   const accessKeyId = process.env.S3_ACCESS_KEY_ID;
   const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY;

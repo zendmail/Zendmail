@@ -92,7 +92,7 @@ export function createDefaultBlock(type: EmailBlockType): EmailBlock {
     case "wave":
       return { id, type, shape: "wave", top: "@surface", bottom: "@primary", height: 56 };
     case "social":
-      return { id, type, links: [{ network: "instagram", url: "https://instagram.com" }, { network: "facebook", url: "https://facebook.com" }, { network: "x", url: "https://x.com" }], bg: "@surface", iconBg: "@primary" };
+      return { id, type, links: [{ network: "instagram", url: "https://instagram.com" }, { network: "facebook", url: "https://facebook.com" }, { network: "x", url: "https://x.com" }], bg: "@surface", iconStyle: "brand" };
     case "links":
       return { id, type, links: [{ label: "Shop all", url: "https://example.com" }, { label: "About us", url: "https://example.com/about" }, { label: "Contact", url: "https://example.com/contact" }], style: "inline", bg: "@surface" };
   }
