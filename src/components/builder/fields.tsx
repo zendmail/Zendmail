@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp, Bold, ImageUp, Italic, Link2, LoaderCircle, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Bold, Crop, ImageUp, Italic, Link2, LoaderCircle, Plus, Trash2 } from "lucide-react";
 import type { EmailBlock, EmailTheme } from "@/db/schema";
 import type { FieldDef } from "@/lib/email-builder/schema";
 import type { ItemOp } from "@/lib/email-builder/schema";
 import { ART_NAMES, iconAssetUrl, resolveImageUrl } from "@/lib/email-builder/assets";
 import { COLOR_TOKENS, TOKEN_LABELS, isToken, normalizeHex, resolveColor, resolveToken } from "@/lib/email-builder/theme";
 import { uploadCampaignImage } from "@/components/campaigns/upload-image";
+import { CropDialog } from "./crop-dialog";
 
 type Textish = Exclude<FieldDef, { kind: "number" } | { kind: "toggle" } | { kind: "select" } | { kind: "items" }>;
 
@@ -101,6 +102,7 @@ function ImageField({ id, value, theme, scope, onChange }: { id: string; value: 
   const file = React.useRef<HTMLInputElement>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [cropping, setCropping] = React.useState(false);
   const [url, setUrl] = useDraft(value.startsWith("asset:") ? "" : value, onChange);
   const isArt = value.startsWith("asset:art");
   const artName = isArt ? new URLSearchParams(value.split("?")[1]).get("name") ?? "" : "";
@@ -122,6 +124,7 @@ function ImageField({ id, value, theme, scope, onChange }: { id: string; value: 
           <button type="button" disabled={busy} onClick={() => file.current?.click()} className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-surface px-2.5 text-[12.5px] font-medium text-text-primary hover:bg-surface-secondary disabled:opacity-60">
             {busy ? <LoaderCircle size={13} className="animate-spin" /> : <ImageUp size={13} />} Upload
           </button>
+          {value && !value.startsWith("asset:") && <button type="button" onClick={() => setCropping(true)} className="inline-flex h-8 items-center gap-1.5 rounded-[8px] border border-border bg-surface px-2.5 text-[12.5px] font-medium text-text-primary hover:bg-surface-secondary"><Crop size={13} /> Crop</button>}
           {value && <button type="button" onClick={() => onChange("")} className="inline-flex h-8 items-center rounded-[8px] px-2.5 text-[12.5px] font-medium text-text-secondary hover:bg-surface-secondary hover:text-danger">Remove</button>}
         </div>
       </div>
@@ -131,6 +134,7 @@ function ImageField({ id, value, theme, scope, onChange }: { id: string; value: 
       </select>
       <input id={id} className={input} value={url} placeholder="…or paste an image address (https://)" onChange={(e) => setUrl(e.target.value)} />
       {error && <p role="alert" className="text-[11.5px] text-danger">{error}</p>}
+      {cropping && <CropDialog src={preview} scope={scope} onDone={(u) => { onChange(u); setCropping(false); }} onClose={() => setCropping(false)} />}
     </div>
   );
 }
