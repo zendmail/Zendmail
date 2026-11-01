@@ -55,8 +55,8 @@ export type EmailSocialNetwork = "facebook" | "instagram" | "x" | "tiktok" | "yo
 export type EmailBlock =
   | { id: string; type: "text"; html: string; color?: string }
   | { id: string; type: "heading"; text: string; color?: string }
-  | { id: string; type: "image"; url: string; alt: string }
-  | { id: string; type: "button"; label: string; url: string; backgroundColor?: string; textColor?: string }
+  | { id: string; type: "image"; url: string; alt: string; imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number }
+  | { id: string; type: "button"; label: string; url: string; backgroundColor?: string; textColor?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large"; fullWidth?: boolean }
   | { id: string; type: "divider" }
   | { id: string; type: "spacer"; height: number }
   | { id: string; type: "footer"; text: string; color?: string; bg?: BlockColor }
@@ -64,7 +64,7 @@ export type EmailBlock =
   | {
       id: string; type: "hero";
       eyebrow?: string; headline: string; text?: string;
-      imageUrl?: string; imageAlt?: string; imagePosition?: "top" | "bottom";
+      imageUrl?: string; imageAlt?: string; imagePosition?: "top" | "bottom"; imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number;
       buttonLabel?: string; buttonUrl?: string;
       align?: "left" | "center"; bg?: BlockColor; color?: BlockColor; accent?: BlockColor;
     }
@@ -91,7 +91,7 @@ export type EmailBlock =
     }
   | {
       id: string; type: "split";
-      imageUrl: string; imageAlt?: string; imageSide: "left" | "right";
+      imageUrl: string; imageAlt?: string; imageSide: "left" | "right"; imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number;
       eyebrow?: string; headline: string; text?: string; buttonLabel?: string; buttonUrl?: string;
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor;
     }

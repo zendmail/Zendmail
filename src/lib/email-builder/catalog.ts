@@ -1,5 +1,5 @@
 import type { EmailBlock, EmailBlockType } from "@/db/schema";
-import { coerceField, isSectionType, SECTION_DEFS, setSectionField, type FieldDef } from "./schema";
+import { coerceField, IMAGE_LAYOUT_FIELDS, isSectionType, SECTION_DEFS, setSectionField, type FieldDef } from "./schema";
 import { sanitizeRichText } from "./document";
 
 /**
@@ -19,11 +19,11 @@ export const BASIC_DEFS: Record<BasicType, { label: string; fields: FieldDef[]; 
     summary: (b) => String(b.html ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 60),
     fields: [{ key: "html", label: "Content", kind: "textarea", max: 20000 }, color("color", "Text colour")],
   },
-  image: { label: "Image", summary: (b) => String(b.alt ?? ""), fields: [{ key: "url", label: "Image", kind: "image" }, { key: "alt", label: "Description", kind: "text", max: 200 }] },
+  image: { label: "Image", summary: (b) => String(b.alt ?? ""), fields: [{ key: "url", label: "Image", kind: "image" }, { key: "alt", label: "Description", kind: "text", max: 200 }, ...IMAGE_LAYOUT_FIELDS] },
   button: {
     label: "Button",
     summary: (b) => String(b.label ?? ""),
-    fields: [{ key: "label", label: "Label", kind: "text", max: 60 }, { key: "url", label: "Link", kind: "url" }, color("backgroundColor", "Button colour"), color("textColor", "Label colour")],
+    fields: [{ key: "label", label: "Label", kind: "text", max: 60 }, { key: "url", label: "Link", kind: "url" }, color("backgroundColor", "Button colour"), color("textColor", "Label colour"), { key: "align", label: "Button position", kind: "select", options: [{ value: "left", label: "Left" }, { value: "center", label: "Center" }, { value: "right", label: "Right" }] }, { key: "size", label: "Button size", kind: "select", options: [{ value: "small", label: "Small" }, { value: "medium", label: "Medium" }, { value: "large", label: "Large" }] }, { key: "fullWidth", label: "Full width", kind: "toggle" }],
   },
   divider: { label: "Divider", summary: () => "", fields: [] },
   spacer: { label: "Spacer", summary: (b) => `${b.height ?? 24}px`, fields: [{ key: "height", label: "Height (px)", kind: "number", min: 0, max: 200 }] },

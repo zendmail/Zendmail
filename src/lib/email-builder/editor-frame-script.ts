@@ -21,25 +21,49 @@ export const EDITOR_SCRIPT = String.raw`
     ".zm-bar button{all:unset;box-sizing:border-box;width:26px;height:26px;display:grid;place-items:center;border-radius:6px;cursor:pointer;color:#475467}" +
     ".zm-bar button:hover{background:#F2F4F7;color:#101828}" +
     ".zm-bar button[data-a=remove]:hover{background:#FEE4E2;color:#B42318}" +
+    ".zm-h{position:absolute;z-index:2147483003;width:14px;height:14px;background:#fff;border:2px solid " + ACCENT + ";border-radius:50%;transform:translate(-50%,-50%);cursor:ew-resize;box-sizing:border-box;touch-action:none}" +
+    ".zm-tip{position:absolute;z-index:2147483004;background:#101828;color:#fff;font:600 11px/1 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:4px 7px;border-radius:5px;pointer-events:none;transform:translate(-50%,-140%);white-space:nowrap}" +
+    ".zm-drop{position:absolute;z-index:2147483004;height:3px;background:" + ACCENT + ";border-radius:2px;pointer-events:none}" +
+    ".zm-bar button[data-a=grip]{cursor:grab;touch-action:none}" +
     ".zm-bar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}";
   document.head.appendChild(css);
 
   var hoverBox = el("div", "zm-box zm-hover"), selBox = el("div", "zm-box zm-sel"), chip = el("div", "zm-chip"), bar = el("div", "zm-bar");
   var icons = {
+    grip: '<circle cx="9" cy="6" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="18" r="1.2"/>',
     up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     down: '<path d="M12 5v14M19 12l-7 7-7-7"/>',
     duplicate: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
     remove: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'
   };
-  var titles = { up: "Move up", down: "Move down", duplicate: "Duplicate", remove: "Delete" };
+  var titles = { grip: "Drag to reorder", up: "Move up", down: "Move down", duplicate: "Duplicate", remove: "Delete" };
   Object.keys(icons).forEach(function (a) {
     var b = document.createElement("button");
     b.setAttribute("data-a", a); b.title = titles[a]; b.setAttribute("aria-label", titles[a]);
     b.innerHTML = '<svg viewBox="0 0 24 24">' + icons[a] + "</svg>";
     bar.appendChild(b);
   });
-  [hoverBox, selBox, chip, bar].forEach(function (n) { document.body.appendChild(n); });
-  bar.style.display = chip.style.display = selBox.style.display = hoverBox.style.display = "none";
+  var hE = el("div", "zm-h"), hW = el("div", "zm-h"), tip = el("div", "zm-tip"), drop = el("div", "zm-drop");
+  hE.setAttribute("data-h", "e"); hW.setAttribute("data-h", "w");
+  [hoverBox, selBox, chip, bar, hE, hW, tip, drop].forEach(function (n) { document.body.appendChild(n); });
+  bar.style.display = chip.style.display = selBox.style.display = hoverBox.style.display = hE.style.display = hW.style.display = tip.style.display = drop.style.display = "none";
+  var selImgIdx = 0, dragging = false, suppressClick = false;
+  function curImg() {
+    var s = find(selectedId);
+    if (!s) return null;
+    var imgs = s.querySelectorAll("img[data-zm-img]");
+    return imgs.length ? (imgs[selImgIdx] || imgs[0]) : null;
+  }
+  function placeHandles() {
+    var img = editing ? null : curImg();
+    if (!img) { hE.style.display = hW.style.display = "none"; return; }
+    var r = rect(img), align = img.getAttribute("data-zm-align") || "center";
+    hE.style.display = align === "right" ? "none" : "block";
+    hW.style.display = align === "left" ? "none" : "block";
+    hE.style.top = hW.style.top = (r.top + r.height / 2) + "px";
+    hE.style.left = Math.max(10, r.left + r.width - 9) + "px";
+    hW.style.left = (r.left + 9) + "px";
+  }
 
   function el(tag, cls) { var n = document.createElement(tag); n.className = cls; return n; }
   function find(id) { return id ? document.querySelector('[data-block-id="' + CSS.escape(id) + '"]') : null; }
@@ -69,6 +93,7 @@ export const EDITOR_SCRIPT = String.raw`
       bar.style.top = Math.max(r.top + 18, window.scrollY + 22) + "px";
       bar.style.left = Math.max(8, r.left + r.width - bar.offsetWidth - 10) + "px";
     } else { chip.style.display = bar.style.display = "none"; }
+    if (!dragging) placeHandles();
   }
   function blockOf(target) { return target && target.closest ? target.closest("[data-block-id]") : null; }
 
@@ -79,11 +104,19 @@ export const EDITOR_SCRIPT = String.raw`
   document.addEventListener("mouseleave", function () { hoverId = null; layout(); });
   document.addEventListener("click", function (e) {
     var btn = e.target.closest && e.target.closest(".zm-bar button");
-    if (btn) { e.preventDefault(); post({ zm: "action", action: btn.getAttribute("data-a"), id: selectedId }); return; }
+    if (btn) { e.preventDefault(); if (btn.getAttribute("data-a") !== "grip") post({ zm: "action", action: btn.getAttribute("data-a"), id: selectedId }); return; }
     e.preventDefault();
+    if (suppressClick) { suppressClick = false; return; }
     var b = blockOf(e.target);
     var id = b ? b.getAttribute("data-block-id") : null;
-    selectedId = id; layout(); post({ zm: "select", id: id });
+    var part = null;
+    if (id) {
+      var pimg = e.target.closest && e.target.closest("img[data-zm-img]");
+      if (pimg) { part = "image"; var all = Array.prototype.slice.call(b.querySelectorAll("img[data-zm-img]")); selImgIdx = Math.max(0, all.indexOf(pimg)); }
+      else if (e.target.closest && e.target.closest("a[href]")) part = "button";
+      else selImgIdx = 0;
+    }
+    selectedId = id; layout(); post({ zm: "select", id: id, part: part });
   }, true);
   var editing = null;
   function shownText(node) {
@@ -139,6 +172,81 @@ export const EDITOR_SCRIPT = String.raw`
     var range = document.createRange(); range.selectNodeContents(node);
     var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
   }
+
+  document.addEventListener("dragstart", function (e) { if (e.target && e.target.tagName === "IMG") e.preventDefault(); });
+  var gesture = null;
+  document.addEventListener("pointerdown", function (e) {
+    if (editing || e.button > 0) return;
+    var t = e.target;
+    var h = t.closest && t.closest(".zm-h");
+    var grip = t.closest && t.closest(".zm-bar button[data-a=grip]");
+    var img = t.closest && t.closest("img[data-zm-img]");
+    if (h) {
+      var im = curImg(); if (!im) return;
+      e.preventDefault();
+      var base = parseFloat(im.getAttribute("data-zm-base")) || im.getBoundingClientRect().width;
+      var parentW = im.parentElement ? im.parentElement.getBoundingClientRect().width : base;
+      var align = im.getAttribute("data-zm-align") || "center";
+      gesture = { kind: "resize", img: im, x: e.clientX, w: im.getBoundingClientRect().width, base: base, limit: Math.min(base, parentW), sign: h.getAttribute("data-h") === "e" ? 1 : -1, mult: align === "center" ? 2 : 1 };
+      dragging = true; try { h.setPointerCapture(e.pointerId); } catch (x) {}
+    } else if (grip && selectedId) {
+      e.preventDefault();
+      gesture = { kind: "reorder", id: selectedId, to: null };
+      dragging = true; try { grip.setPointerCapture(e.pointerId); } catch (x) {}
+    } else if (img && selectedId && blockOf(img) && blockOf(img).getAttribute("data-block-id") === selectedId) {
+      e.preventDefault();
+      gesture = { kind: "move", img: img, x: e.clientX, moved: false, align: img.getAttribute("data-zm-align") || "center" };
+    }
+  }, true);
+  document.addEventListener("pointermove", function (e) {
+    if (!gesture) return;
+    if (gesture.kind === "resize") {
+      var w = gesture.w + gesture.sign * (e.clientX - gesture.x) * gesture.mult;
+      w = Math.max(Math.min(40, gesture.limit), Math.min(gesture.limit, w));
+      gesture.next = w; gesture.img.style.maxWidth = w + "px";
+      var pct = w >= gesture.limit * 0.98 && gesture.limit >= gesture.base * 0.98 ? 100 : Math.round(w / gesture.base * 100);
+      gesture.pct = Math.max(10, Math.min(100, pct));
+      var r = rect(gesture.img);
+      tip.style.display = "block"; tip.textContent = gesture.pct + "%  ·  " + Math.round(w) + "px";
+      tip.style.left = (r.left + r.width / 2) + "px"; tip.style.top = (r.top + 8) + "px";
+      selBox.style.transition = "none"; layout(); placeHandles();
+    } else if (gesture.kind === "move") {
+      var dx = e.clientX - gesture.x;
+      if (!gesture.moved && Math.abs(dx) < 6) return;
+      gesture.moved = true; dragging = true; suppressClick = true;
+      gesture.img.style.transform = "translateX(" + dx + "px)"; gesture.img.style.position = "relative";
+      var pr = gesture.img.parentElement.getBoundingClientRect(), ir = gesture.img.getBoundingClientRect();
+      var ratio = ((ir.left + ir.width / 2) - pr.left) / Math.max(1, pr.width);
+      gesture.to = ratio < 0.34 ? "left" : ratio > 0.66 ? "right" : "center";
+      tip.style.display = "block"; tip.textContent = "Align " + gesture.to;
+      tip.style.left = (ir.left + ir.width / 2 + window.scrollX) + "px"; tip.style.top = (ir.top + window.scrollY + 8) + "px";
+    } else if (gesture.kind === "reorder") {
+      var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-block-id]")), y = e.clientY + window.scrollY, idx = nodes.length;
+      for (var i = 0; i < nodes.length; i++) { var rr = rect(nodes[i]); if (y < rr.top + rr.height / 2) { idx = i; break; } }
+      gesture.to = idx;
+      var lineY = idx < nodes.length ? rect(nodes[idx]).top : rect(nodes[nodes.length - 1]).top + rect(nodes[nodes.length - 1]).height;
+      var wr = rect(nodes[0]);
+      drop.style.display = "block"; drop.style.top = (lineY - 1) + "px"; drop.style.left = wr.left + "px"; drop.style.width = wr.width + "px";
+    }
+  });
+  function endGesture(e) {
+    if (!gesture) return;
+    var g = gesture; gesture = null; dragging = false;
+    if (g.kind !== "move" || g.moved) { suppressClick = true; window.setTimeout(function () { suppressClick = false; }, 60); }
+    tip.style.display = drop.style.display = "none"; selBox.style.transition = "";
+    if (g.kind === "resize") { if (g.pct !== undefined) post({ zm: "setField", id: selectedId, path: "imageWidth", value: String(g.pct) }); }
+    else if (g.kind === "move") {
+      g.img.style.transform = ""; g.img.style.position = "";
+      if (g.moved && g.to && g.to !== g.align) post({ zm: "setField", id: selectedId, path: "imageAlign", value: g.to });
+    } else if (g.kind === "reorder") {
+      var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-block-id]"));
+      var from = nodes.findIndex(function (n) { return n.getAttribute("data-block-id") === g.id; });
+      if (g.to !== null && from >= 0) { var to = g.to > from ? g.to - 1 : g.to; if (to !== from) post({ zm: "moveTo", id: g.id, index: to }); }
+    }
+    layout();
+  }
+  document.addEventListener("pointerup", endGesture);
+  document.addEventListener("pointercancel", endGesture);
   document.addEventListener("keydown", function (e) {
     if (editing) return;
     if (e.key === "Escape") { selectedId = null; layout(); post({ zm: "select", id: null }); }
@@ -163,7 +271,7 @@ export const EDITOR_SCRIPT = String.raw`
     if (m.zm === "patch" && typeof m.html === "string" && !editing) {
       // Swap the email content in place (no iframe reload, so no flash and the scroll position is kept).
       var next = new DOMParser().parseFromString(m.html, "text/html");
-      var keep = function (n) { return n.nodeType === 1 && (n.classList.contains("zm-box") || n.classList.contains("zm-chip") || n.classList.contains("zm-bar") || n.tagName === "SCRIPT"); };
+      var keep = function (n) { return n.nodeType === 1 && (n.classList.contains("zm-box") || n.classList.contains("zm-chip") || n.classList.contains("zm-bar") || n.classList.contains("zm-h") || n.classList.contains("zm-tip") || n.classList.contains("zm-drop") || n.tagName === "SCRIPT"); };
       Array.prototype.slice.call(document.body.childNodes).forEach(function (n) { if (!keep(n)) document.body.removeChild(n); });
       var first = document.body.firstChild;
       Array.prototype.slice.call(next.body.childNodes).forEach(function (n) {

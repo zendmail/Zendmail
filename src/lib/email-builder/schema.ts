@@ -30,6 +30,13 @@ export type SectionType = Exclude<EmailBlock["type"], "heading" | "text" | "imag
 type SectionDef = { label: string; fields: FieldDef[]; summary: (block: Record<string, unknown>) => string };
 
 const color = (key: string, label: string): FieldDef => ({ key, label, kind: "color" });
+
+/** Email-safe "Canva-like" image controls: width as % of the available space, alignment, and corner radius. */
+export const IMAGE_LAYOUT_FIELDS: FieldDef[] = [
+  { key: "imageWidth", label: "Image size (%)", kind: "number", min: 10, max: 100 },
+  { key: "imageAlign", label: "Image position", kind: "select", options: opt("left", "center", "right") },
+  { key: "imageRadius", label: "Image corners (px)", kind: "number", min: 0, max: 48 },
+];
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const firstLine = (v: unknown) => str(v).replace(/\[\[|\]\]|\*\*/g, "").split("\n")[0].slice(0, 60);
 
@@ -58,7 +65,8 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
       { key: "text", label: "Text", kind: "textarea", max: 400 },
       { key: "imageUrl", label: "Image", kind: "image" },
       { key: "imageAlt", label: "Image description", kind: "text", max: 120 },
-      { key: "imagePosition", label: "Image position", kind: "select", options: opt("top", "bottom") },
+      { key: "imagePosition", label: "Image placement", kind: "select", options: opt("top", "bottom") },
+      ...IMAGE_LAYOUT_FIELDS,
       { key: "buttonLabel", label: "Button label", kind: "text", max: 40 },
       { key: "buttonUrl", label: "Button link", kind: "url" },
       { key: "align", label: "Text alignment", kind: "select", options: opt("center", "left") },
@@ -149,6 +157,7 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
       { key: "imageUrl", label: "Image", kind: "image" },
       { key: "imageAlt", label: "Image description", kind: "text", max: 120 },
       { key: "imageSide", label: "Image side", kind: "select", options: opt("left", "right") },
+      ...IMAGE_LAYOUT_FIELDS,
       { key: "eyebrow", label: "Small label above", kind: "text", max: 40 },
       { key: "headline", label: "Headline", kind: "text", max: 100 },
       { key: "text", label: "Text", kind: "textarea", max: 400 },

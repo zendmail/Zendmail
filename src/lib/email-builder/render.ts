@@ -100,14 +100,18 @@ function buttonRadius(theme: EmailTheme) {
   return theme.button === "pill" ? 999 : theme.button === "square" ? 2 : 10;
 }
 
-function button(c: Ctx, label: string, url: string | undefined, bg: string, fg: string, align: "left" | "center" = "left", small = false) {
+type ButtonOpts = { size?: "small" | "medium" | "large"; fullWidth?: boolean };
+
+function button(c: Ctx, label: string, url: string | undefined, bg: string, fg: string, align: "left" | "center" | "right" = "left", small = false, opts: ButtonOpts = {}) {
   const r = buttonRadius(c.theme);
-  const pad = small ? "10px 20px" : "15px 32px";
-  const size = small ? 13 : 15;
-  const cell = `<td align="center" bgcolor="${bg}" style="background-color:${bg};border-radius:${r}px;"><a href="${esc(c.link(url))}" target="_blank" style="display:inline-block;padding:${pad};font-family:${c.body};font-size:${size}px;line-height:${size + 2}px;font-weight:700;color:${fg};text-decoration:none;border-radius:${r}px;">${esc(label)}</a></td>`;
-  // Only centre via align+margin; a left "align" attribute would float the table and let following content wrap beside it.
-  const position = align === "center" ? `align="center" style="margin:0 auto;"` : `style="margin:0;"`;
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" ${position}><tr>${cell}</tr></table>`;
+  const size = opts.size ?? (small ? "small" : "medium");
+  const [pad, font] = size === "small" ? ["10px 20px", 13] : size === "large" ? ["19px 40px", 17] : ["15px 32px", 15];
+  const full = opts.fullWidth === true;
+  const cell = `<td align="center" bgcolor="${bg}" style="background-color:${bg};border-radius:${r}px;"><a href="${esc(c.link(url))}" target="_blank" style="display:${full ? "block" : "inline-block"};padding:${pad};font-family:${c.body};font-size:${font}px;line-height:${font + 2}px;font-weight:700;color:${fg};text-decoration:none;border-radius:${r}px;${full ? "text-align:center;" : ""}">${esc(label)}</a></td>`;
+  // Position via margin only; a left/right "align" attribute would float the table and let following content wrap beside it.
+  const margin = align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0";
+  const attrs = full ? `width="100%" style="width:100%;margin:0;"` : align === "center" ? `align="center" style="margin:${margin};"` : `style="margin:${margin};"`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" ${attrs}><tr>${cell}</tr></table>`;
 }
 
 function h2(c: Ctx, text: string, color: string, accent: string, align: "left" | "center" = "center") {
@@ -118,11 +122,21 @@ function para(c: Ctx, text: string, color: string, size = 16, align: "left" | "c
   return `<p style="margin:0;padding:0;font-family:${c.body};font-size:${size}px;line-height:1.6;color:${color};text-align:${align};">${rich(text, color)}</p>`;
 }
 
-function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: { maxWidth?: number; radius?: number; margin?: string } = {}) {
+type ImageLayout = { imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number };
+
+function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: { maxWidth?: number; radius?: number; margin?: string; layout?: ImageLayout } = {}) {
   const src = c.img(url);
   if (!src) return "";
-  const { maxWidth = WIDTH - PAD * 2, radius = 0, margin = "0" } = opts;
-  return `<img class="fluid" src="${esc(src)}" alt="${esc(alt ?? "")}" width="${maxWidth}" style="display:block;width:100%;max-width:${maxWidth}px;height:auto;border:0;outline:none;text-decoration:none;border-radius:${radius}px;margin:${margin};" />`;
+  const { maxWidth: base = WIDTH - PAD * 2, layout } = opts;
+  let { radius = 0, margin = "0" } = opts;
+  let maxWidth = base;
+  if (layout) {
+    if (layout.imageWidth !== undefined) maxWidth = Math.max(24, Math.round((base * layout.imageWidth) / 100));
+    if (layout.imageRadius !== undefined) radius = layout.imageRadius;
+    if (layout.imageAlign) margin = layout.imageAlign === "center" ? "0 auto" : layout.imageAlign === "right" ? "0 0 0 auto" : "0";
+  }
+  const editorAttrs = baseOverride !== null ? ` data-zm-img="1" data-zm-base="${base}" data-zm-align="${layout?.imageAlign ?? (margin === "0 auto" ? "center" : "left")}"` : "";
+  return `<img class="fluid" src="${esc(src)}" alt="${esc(alt ?? "")}" width="${maxWidth}"${editorAttrs} style="display:block;width:100%;max-width:${maxWidth}px;height:auto;border:0;outline:none;text-decoration:none;border-radius:${radius}px;margin:${margin};" />`;
 }
 
 function icon(c: Ctx, name: string, bg: string, fg: string, size = 44, shape: "circle" | "rounded" | "none" = "circle", brand = false) {
@@ -154,12 +168,25 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
     }
     case "image": {
       const src = c.img(block.url);
-      return src ? `<tr><td style="padding:0;font-size:0;line-height:0;background-color:${surface};"><img class="fluid" src="${esc(src)}" alt="${esc(block.alt)}" width="${WIDTH}" style="display:block;width:100%;max-width:${WIDTH}px;height:auto;border:0;" /></td></tr>` : "";
+      if (!src) return "";
+      const custom = block.imageWidth !== undefined || block.imageAlign !== undefined || block.imageRadius !== undefined;
+      if (!custom) {
+        const editorAttrs = baseOverride !== null ? ` data-zm-img="1" data-zm-base="${WIDTH}" data-zm-align="center"` : "";
+        return `<tr><td style="padding:0;font-size:0;line-height:0;background-color:${surface};"><img class="fluid" src="${esc(src)}" alt="${esc(block.alt)}" width="${WIDTH}"${editorAttrs} style="display:block;width:100%;max-width:${WIDTH}px;height:auto;border:0;" /></td></tr>`;
+      }
+      const pct = block.imageWidth ?? 100;
+      // Full width stays edge-to-edge; anything smaller sits inside the normal side padding so it can be aligned.
+      const inset = pct < 100;
+      const base = inset ? WIDTH - PAD * 2 : WIDTH;
+      const img = image(c, block.url, block.alt, { maxWidth: inset ? Math.min(base, Math.round((WIDTH * pct) / 100)) : WIDTH, layout: { imageAlign: block.imageAlign ?? "center", imageRadius: block.imageRadius } });
+      // The drag handle measures against the full 600px, so expose that as the base.
+      const withBase = baseOverride !== null ? img.replace(/data-zm-base="\d+"/, `data-zm-base="${WIDTH}"`) : img;
+      return `<tr><td style="padding:${inset ? `8px ${PAD}px` : "0"};font-size:0;line-height:0;background-color:${surface};">${withBase}</td></tr>`;
     }
     case "button": {
       const bg = c.color(block.backgroundColor, t.primary);
       const fg = c.color(block.textColor, contrastOn(bg));
-      return section(surface, button(c, block.label, block.url, bg, fg, "left"), { top: 14, bottom: 14 });
+      return section(surface, button(c, block.label, block.url, bg, fg, block.align ?? "left", false, { size: block.size, fullWidth: block.fullWidth }), { top: 14, bottom: 14 });
     }
     case "divider":
       return section(surface, `<div style="height:1px;line-height:1px;font-size:1px;border-top:1px solid ${mix(t.text, "#FFFFFF", 0.86)};">&nbsp;</div>`, { top: 12, bottom: 12 });
@@ -219,7 +246,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const accent = c.color(block.accent, color === "#FFFFFF" ? mix(t.accent, "#FFFFFF", 0.35) : t.primary);
       const align = block.align === "left" ? "left" : "center";
       const onDark = contrastOn(bg) === "#FFFFFF";
-      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: align === "center" ? 480 : 536, margin: align === "center" ? "0 auto" : "0" });
+      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: align === "center" ? 480 : 536, margin: align === "center" ? "0 auto" : "0", layout: block });
       const top = block.imagePosition === "top" && img ? `<div style="padding-bottom:26px;">${img}</div>` : "";
       const bottom = block.imagePosition !== "top" && img ? `<div style="padding-top:30px;">${img}</div>` : "";
       const inner =
@@ -343,7 +370,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const bg = c.color(block.bg, surface);
       const color = c.color(block.color, contrastOn(bg));
       const accent = c.color(block.accent, t.primary);
-      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: 260, radius: 16 });
+      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: 260, radius: 16, layout: block });
       const text =
         (block.eyebrow ? `<div style="padding-bottom:8px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${accent};">${esc(block.eyebrow)}</div>` : "") +
         `<div style="font-family:${c.head};font-size:24px;line-height:1.2;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>` +

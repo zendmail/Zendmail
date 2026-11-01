@@ -109,7 +109,23 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
   const onInlineEdit = React.useCallback((blockId: string, path: string, value: string) => dispatch({ type: "FIELD", id: blockId, path, value }), []);
 
   const onCanvas = React.useCallback((m: CanvasMessage) => {
-    if (m.zm === "select") { select(m.id); if (m.id) setMobile("settings"); }
+    if (m.zm === "select") {
+      select(m.id);
+      if (m.id) setMobile("settings");
+      const part = m.part;
+      const bid = m.id;
+      if (bid && part) {
+        // Clicking an image/button on the canvas jumps to that element's own settings.
+        window.setTimeout(() => {
+          const ids = part === "image" ? [`${bid}-imageWidth`, `${bid}-url`] : [`${bid}-buttonLabel`, `${bid}-label`];
+          for (const fid of ids) {
+            const node = document.getElementById(fid);
+            if (node) { node.scrollIntoView({ block: "center", behavior: "smooth" }); break; }
+          }
+        }, 80);
+      }
+    }
+    else if (m.zm === "moveTo") dispatch({ type: "MOVE", id: m.id, toIndex: m.index });
     else if (m.zm === "history") dispatch({ type: m.dir === "undo" ? "UNDO" : "REDO" });
     else if (m.zm === "action" && m.id) {
       if (m.action === "up") move(m.id, -1);

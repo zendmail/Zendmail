@@ -97,13 +97,23 @@ function sanitizeBlock(raw: unknown, seen: Set<string>): EmailBlock | null {
     return o;
   };
 
+  const numField = (key: string, min: number, max: number): number | undefined => {
+    if (raw[key] === undefined || raw[key] === null || raw[key] === "") return undefined;
+    const n = Math.round(Number(raw[key]));
+    return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : undefined;
+  };
+  const pick = <T extends string>(key: string, allowed: readonly T[]): T | undefined => (allowed as readonly string[]).includes(raw[key] as string) ? (raw[key] as T) : undefined;
+
   switch (raw.type) {
     case "heading":
       return compact({ id, type: "heading", text: field("text", "text", 200) ?? "", color: field("color", "color") }) as EmailBlock;
     case "text":
       return compact({ id, type: "text", html: sanitizeRichText(asString(raw.html)), color: field("color", "color") }) as EmailBlock;
     case "image":
-      return { id, type: "image", url: (field("image", "url") as string) ?? "", alt: (field("text", "alt", 200) as string) ?? "" };
+      return compact({
+        id, type: "image", url: (field("image", "url") as string) ?? "", alt: (field("text", "alt", 200) as string) ?? "",
+        imageWidth: numField("imageWidth", 10, 100), imageAlign: pick("imageAlign", ["left", "center", "right"]), imageRadius: numField("imageRadius", 0, 48),
+      }) as EmailBlock;
     case "button":
       return compact({
         id, type: "button",
@@ -111,6 +121,9 @@ function sanitizeBlock(raw: unknown, seen: Set<string>): EmailBlock | null {
         url: field("url", "url") ?? "",
         backgroundColor: field("color", "backgroundColor"),
         textColor: field("color", "textColor"),
+        align: pick("align", ["left", "center", "right"]),
+        size: pick("size", ["small", "medium", "large"]),
+        fullWidth: raw.fullWidth === true || raw.fullWidth === "true" ? true : undefined,
       }) as EmailBlock;
     case "divider":
       return { id, type: "divider" };
