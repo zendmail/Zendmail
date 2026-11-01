@@ -36,6 +36,8 @@ export const IMAGE_LAYOUT_FIELDS: FieldDef[] = [
   { key: "imageWidth", label: "Image size (%)", kind: "number", min: 10, max: 100 },
   { key: "imageAlign", label: "Image position", kind: "select", options: opt("left", "center", "right") },
   { key: "imageRadius", label: "Image corners (px)", kind: "number", min: 0, max: 48 },
+  { key: "imageX", label: "Free position: left to right (%)", kind: "number", min: 0, max: 100 },
+  { key: "imageY", label: "Free position: up / down (px)", kind: "number", min: -120, max: 240 },
 ];
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const firstLine = (v: unknown) => str(v).replace(/\[\[|\]\]|\*\*/g, "").split("\n")[0].slice(0, 60);

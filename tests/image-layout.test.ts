@@ -43,3 +43,20 @@ describe("image layout controls", () => {
     expect(next && "imageWidth" in next ? next.imageWidth : null).toBe(40);
   });
 });
+
+describe("free image position", () => {
+  it("renders percentage offsets and a vertical lift", () => {
+    const html = renderEmailHtml([img({ imageWidth: 50, imageX: 100, imageY: -20 }) as EmailBlock]);
+    expect(html).toMatch(/margin:0 0 0 [\d.]+%;margin-top:-20px/);
+  });
+  it("sanitises x/y and moves both in one reducer step", async () => {
+    const [b] = sanitizeBlocks([img({ imageX: 400, imageY: -999 })]) as Extract<EmailBlock, { type: "image" }>[];
+    expect(b.imageX).toBe(100);
+    expect(b.imageY).toBe(-120);
+    const { editorReducer, initEditorState } = await import("@/lib/email-builder/editor-state");
+    const state = initEditorState({ theme: {} as never, blocks: [img() as EmailBlock] } as never);
+    const next = editorReducer(state, { type: "FIELD", id: "b1", path: "imagePos", value: "30,15" });
+    expect(next.doc.blocks[0]).toMatchObject({ imageX: 30, imageY: 15 });
+    expect(next.past.length).toBe(1);
+  });
+});

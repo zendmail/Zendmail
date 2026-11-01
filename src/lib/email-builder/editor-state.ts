@@ -94,7 +94,17 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case "FIELD": {
       const i = indexOf(doc, action.id);
       if (i < 0) return state;
-      const next = setBlockField(doc.blocks[i], action.path, action.value);
+      let next: EmailBlock | null;
+      if (action.path === "imagePos") {
+        // One undo step for a drag on the canvas: "x,y" sets both free-position fields.
+        const [x, y] = action.value.split(",");
+        const withX = x ? setBlockField(doc.blocks[i], "imageX", x) : doc.blocks[i];
+        next = withX && setBlockField(withX, "imageY", y ?? "");
+      } else {
+        next = setBlockField(doc.blocks[i], action.path, action.value);
+        // Picking left/center/right goes back to the preset positions.
+        if (next && action.path === "imageAlign") { next = { ...next } as EmailBlock; delete (next as { imageX?: number }).imageX; }
+      }
       if (!next || JSON.stringify(next) === JSON.stringify(doc.blocks[i])) return state;
       const blocks = doc.blocks.map((b, n) => (n === i ? next : b));
       return commit(state, { ...doc, blocks }, `field:${action.id}:${action.path}`);

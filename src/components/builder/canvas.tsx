@@ -56,7 +56,7 @@ export function Canvas({ doc, selectedId, scrollTarget, device, onMessage, onInl
       } else if (m.zm === "scroll") {
         scrollY.current = m.y;
       } else if (m.zm === "setField") {
-        if (typeof m.id === "string" && ["imageWidth", "imageAlign", "imageRadius"].includes(m.path)) onInlineEdit(m.id, m.path, String(m.value));
+        if (typeof m.id === "string" && ["imageWidth", "imageAlign", "imageRadius", "imagePos"].includes(m.path)) onInlineEdit(m.id, m.path, String(m.value));
       } else if (m.zm === "inlineStart") {
         // Map what was double-clicked back to the field it shows; edit the innermost element that maps to exactly one field.
         const block = latest.current.doc.blocks.find((b) => b.id === m.id);

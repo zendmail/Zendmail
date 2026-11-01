@@ -193,9 +193,9 @@ export const EDITOR_SCRIPT = String.raw`
       e.preventDefault();
       gesture = { kind: "reorder", id: selectedId, to: null };
       dragging = true; try { grip.setPointerCapture(e.pointerId); } catch (x) {}
-    } else if (img && selectedId && blockOf(img) && blockOf(img).getAttribute("data-block-id") === selectedId) {
+    } else if (img && blockOf(img)) {
       e.preventDefault();
-      gesture = { kind: "move", img: img, x: e.clientX, moved: false, align: img.getAttribute("data-zm-align") || "center" };
+      gesture = { kind: "move", img: img, block: blockOf(img).getAttribute("data-block-id"), x: e.clientX, y: e.clientY, moved: false, y0: parseFloat(img.getAttribute("data-zm-y")) || 0 };
     }
   }, true);
   document.addEventListener("pointermove", function (e) {
@@ -211,15 +211,23 @@ export const EDITOR_SCRIPT = String.raw`
       tip.style.left = (r.left + r.width / 2) + "px"; tip.style.top = (r.top + 8) + "px";
       selBox.style.transition = "none"; layout(); placeHandles();
     } else if (gesture.kind === "move") {
-      var dx = e.clientX - gesture.x;
-      if (!gesture.moved && Math.abs(dx) < 6) return;
-      gesture.moved = true; dragging = true; suppressClick = true;
-      gesture.img.style.transform = "translateX(" + dx + "px)"; gesture.img.style.position = "relative";
-      var pr = gesture.img.parentElement.getBoundingClientRect(), ir = gesture.img.getBoundingClientRect();
-      var ratio = ((ir.left + ir.width / 2) - pr.left) / Math.max(1, pr.width);
-      gesture.to = ratio < 0.34 ? "left" : ratio > 0.66 ? "right" : "center";
-      tip.style.display = "block"; tip.textContent = "Align " + gesture.to;
-      tip.style.left = (ir.left + ir.width / 2 + window.scrollX) + "px"; tip.style.top = (ir.top + window.scrollY + 8) + "px";
+      var dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
+      if (!gesture.moved && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      if (!gesture.moved) {
+        gesture.moved = true; dragging = true; suppressClick = true;
+        if (selectedId !== gesture.block) {
+          selectedId = gesture.block;
+          var imgsIn = Array.prototype.slice.call(find(selectedId).querySelectorAll("img[data-zm-img]"));
+          selImgIdx = Math.max(0, imgsIn.indexOf(gesture.img));
+          layout(); post({ zm: "select", id: selectedId, part: null });
+        }
+      }
+      gesture.dx = dx; gesture.dy = dy;
+      gesture.img.style.transform = "translate(" + dx + "px," + dy + "px)"; gesture.img.style.position = "relative";
+      var mr = gesture.img.getBoundingClientRect();
+      tip.style.display = "block"; tip.textContent = "Move";
+      tip.style.left = (mr.left + mr.width / 2 + window.scrollX) + "px"; tip.style.top = (mr.top + window.scrollY + 8) + "px";
+      selBox.style.transition = "none"; layout();
     } else if (gesture.kind === "reorder") {
       var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-block-id]")), y = e.clientY + window.scrollY, idx = nodes.length;
       for (var i = 0; i < nodes.length; i++) { var rr = rect(nodes[i]); if (y < rr.top + rr.height / 2) { idx = i; break; } }
@@ -236,8 +244,18 @@ export const EDITOR_SCRIPT = String.raw`
     tip.style.display = drop.style.display = "none"; selBox.style.transition = "";
     if (g.kind === "resize") { if (g.pct !== undefined) post({ zm: "setField", id: selectedId, path: "imageWidth", value: String(g.pct) }); }
     else if (g.kind === "move") {
+      var ir = g.img.getBoundingClientRect(), par = g.img.parentElement, pr = par.getBoundingClientRect(), cs = window.getComputedStyle(par);
       g.img.style.transform = ""; g.img.style.position = "";
-      if (g.moved && g.to && g.to !== g.align) post({ zm: "setField", id: selectedId, path: "imageAlign", value: g.to });
+      if (g.moved) {
+        var padL = parseFloat(cs.paddingLeft) || 0, padR = parseFloat(cs.paddingRight) || 0;
+        var free = pr.width - padL - padR - ir.width, xv = "";
+        if (free > 4) {
+          var xp = Math.max(0, Math.min(100, (ir.left - (pr.left + padL)) / free * 100));
+          if (Math.abs(xp - 50) < 3) xp = 50; else if (xp < 3) xp = 0; else if (xp > 97) xp = 100;
+          xv = String(Math.round(xp));
+        }
+        post({ zm: "setField", id: g.block, path: "imagePos", value: xv + "," + Math.round(g.y0 + (g.dy || 0)) });
+      }
     } else if (g.kind === "reorder") {
       var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-block-id]"));
       var from = nodes.findIndex(function (n) { return n.getAttribute("data-block-id") === g.id; });

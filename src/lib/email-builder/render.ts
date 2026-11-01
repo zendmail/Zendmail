@@ -122,21 +122,32 @@ function para(c: Ctx, text: string, color: string, size = 16, align: "left" | "c
   return `<p style="margin:0;padding:0;font-family:${c.body};font-size:${size}px;line-height:1.6;color:${color};text-align:${align};">${rich(text, color)}</p>`;
 }
 
-type ImageLayout = { imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number };
+type ImageLayout = { imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number; imageX?: number; imageY?: number };
 
-function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: { maxWidth?: number; radius?: number; margin?: string; layout?: ImageLayout } = {}) {
+function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: { maxWidth?: number; radius?: number; margin?: string; layout?: ImageLayout; container?: number } = {}) {
   const src = c.img(url);
   if (!src) return "";
-  const { maxWidth: base = WIDTH - PAD * 2, layout } = opts;
+  const { maxWidth: base = WIDTH - PAD * 2, layout, container = base } = opts;
   let { radius = 0, margin = "0" } = opts;
   let maxWidth = base;
+  let align: "left" | "center" | "right" = margin === "0 auto" ? "center" : "left";
   if (layout) {
     if (layout.imageWidth !== undefined) maxWidth = Math.max(24, Math.round((base * layout.imageWidth) / 100));
     if (layout.imageRadius !== undefined) radius = layout.imageRadius;
-    if (layout.imageAlign) margin = layout.imageAlign === "center" ? "0 auto" : layout.imageAlign === "right" ? "0 0 0 auto" : "0";
+    if (layout.imageAlign) { align = layout.imageAlign; margin = align === "center" ? "0 auto" : align === "right" ? "0 0 0 auto" : "0"; }
   }
-  const editorAttrs = baseOverride !== null ? ` data-zm-img="1" data-zm-base="${base}" data-zm-align="${layout?.imageAlign ?? (margin === "0 auto" ? "center" : "left")}"` : "";
-  return `<img class="fluid" src="${esc(src)}" alt="${esc(alt ?? "")}" width="${maxWidth}"${editorAttrs} style="display:block;width:100%;max-width:${maxWidth}px;height:auto;border:0;outline:none;text-decoration:none;border-radius:${radius}px;margin:${margin};" />`;
+  let sizing = `width:100%;max-width:${maxWidth}px;`;
+  if (layout?.imageX !== undefined) {
+    // Free horizontal position: size and offset are percentages of the row, so it still fits on a phone.
+    const wp = Math.min(100, (maxWidth / container) * 100);
+    const left = (layout.imageX / 100) * (100 - wp);
+    sizing = `width:${wp.toFixed(2)}%;max-width:${maxWidth}px;`;
+    margin = `0 0 0 ${left.toFixed(2)}%`;
+    align = layout.imageX < 34 ? "left" : layout.imageX > 66 ? "right" : "center";
+  }
+  const lift = layout?.imageY ? `margin-top:${layout.imageY}px;` : "";
+  const editorAttrs = baseOverride !== null ? ` data-zm-img="1" data-zm-base="${base}" data-zm-align="${align}" data-zm-y="${layout?.imageY ?? 0}"` : "";
+  return `<img class="fluid" src="${esc(src)}" alt="${esc(alt ?? "")}" width="${maxWidth}"${editorAttrs} style="display:block;${sizing}height:auto;border:0;outline:none;text-decoration:none;border-radius:${radius}px;margin:${margin};${lift}" />`;
 }
 
 function icon(c: Ctx, name: string, bg: string, fg: string, size = 44, shape: "circle" | "rounded" | "none" = "circle", brand = false) {
@@ -169,7 +180,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
     case "image": {
       const src = c.img(block.url);
       if (!src) return "";
-      const custom = block.imageWidth !== undefined || block.imageAlign !== undefined || block.imageRadius !== undefined;
+      const custom = block.imageWidth !== undefined || block.imageAlign !== undefined || block.imageRadius !== undefined || block.imageX !== undefined || block.imageY !== undefined;
       if (!custom) {
         const editorAttrs = baseOverride !== null ? ` data-zm-img="1" data-zm-base="${WIDTH}" data-zm-align="center"` : "";
         return `<tr><td style="padding:0;font-size:0;line-height:0;background-color:${surface};"><img class="fluid" src="${esc(src)}" alt="${esc(block.alt)}" width="${WIDTH}"${editorAttrs} style="display:block;width:100%;max-width:${WIDTH}px;height:auto;border:0;" /></td></tr>`;
@@ -178,7 +189,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       // Full width stays edge-to-edge; anything smaller sits inside the normal side padding so it can be aligned.
       const inset = pct < 100;
       const base = inset ? WIDTH - PAD * 2 : WIDTH;
-      const img = image(c, block.url, block.alt, { maxWidth: inset ? Math.min(base, Math.round((WIDTH * pct) / 100)) : WIDTH, layout: { imageAlign: block.imageAlign ?? "center", imageRadius: block.imageRadius } });
+      const img = image(c, block.url, block.alt, { maxWidth: inset ? Math.min(base, Math.round((WIDTH * pct) / 100)) : WIDTH, layout: { imageAlign: block.imageAlign ?? "center", imageRadius: block.imageRadius, imageX: block.imageX, imageY: block.imageY }, container: inset ? WIDTH - PAD * 2 : WIDTH });
       // The drag handle measures against the full 600px, so expose that as the base.
       const withBase = baseOverride !== null ? img.replace(/data-zm-base="\d+"/, `data-zm-base="${WIDTH}"`) : img;
       return `<tr><td style="padding:${inset ? `8px ${PAD}px` : "0"};font-size:0;line-height:0;background-color:${surface};">${withBase}</td></tr>`;
@@ -246,7 +257,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const accent = c.color(block.accent, color === "#FFFFFF" ? mix(t.accent, "#FFFFFF", 0.35) : t.primary);
       const align = block.align === "left" ? "left" : "center";
       const onDark = contrastOn(bg) === "#FFFFFF";
-      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: align === "center" ? 480 : 536, margin: align === "center" ? "0 auto" : "0", layout: block });
+      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: align === "center" ? 480 : 536, margin: align === "center" ? "0 auto" : "0", layout: block, container: WIDTH - PAD * 2 });
       const top = block.imagePosition === "top" && img ? `<div style="padding-bottom:26px;">${img}</div>` : "";
       const bottom = block.imagePosition !== "top" && img ? `<div style="padding-top:30px;">${img}</div>` : "";
       const inner =
@@ -370,7 +381,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const bg = c.color(block.bg, surface);
       const color = c.color(block.color, contrastOn(bg));
       const accent = c.color(block.accent, t.primary);
-      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: 260, radius: 16, layout: block });
+      const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: 260, radius: 16, layout: block, container: 280 });
       const text =
         (block.eyebrow ? `<div style="padding-bottom:8px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${accent};">${esc(block.eyebrow)}</div>` : "") +
         `<div style="font-family:${c.head};font-size:24px;line-height:1.2;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>` +

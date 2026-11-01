@@ -113,6 +113,7 @@ function sanitizeBlock(raw: unknown, seen: Set<string>): EmailBlock | null {
       return compact({
         id, type: "image", url: (field("image", "url") as string) ?? "", alt: (field("text", "alt", 200) as string) ?? "",
         imageWidth: numField("imageWidth", 10, 100), imageAlign: pick("imageAlign", ["left", "center", "right"]), imageRadius: numField("imageRadius", 0, 48),
+        imageX: numField("imageX", 0, 100), imageY: numField("imageY", -120, 240),
       }) as EmailBlock;
     case "button":
       return compact({
