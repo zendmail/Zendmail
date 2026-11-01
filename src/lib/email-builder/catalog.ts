@@ -1,4 +1,4 @@
-import type { EmailBlock, EmailBlockType } from "@/db/schema";
+import type { EmailBlock, EmailBlockType, EmailOffsets } from "@/db/schema";
 import { coerceField, IMAGE_LAYOUT_FIELDS, isSectionType, SECTION_DEFS, setSectionField, type FieldDef } from "./schema";
 import { sanitizeRichText } from "./document";
 
@@ -93,3 +93,17 @@ export const BLOCK_BLURBS: Record<EmailBlockType, string> = {
   links: "Row of text links or pills",
   social: "Social network icons",
 };
+
+const OFFSET_OK = new Set(["eyebrow", "headline", "text", "button"]);
+
+/** Nudge one element of a block (canvas drag). (0, 0) removes the nudge. */
+export function setBlockOffset(block: EmailBlock, key: string, x: number, y: number): EmailBlock | null {
+  if (!OFFSET_OK.has(key) || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+  if (!["heading", "text", "button", "hero", "coupon", "split", "callout"].includes(block.type)) return null;
+  const next = JSON.parse(JSON.stringify(block)) as EmailBlock & { offsets?: EmailOffsets };
+  const offsets: EmailOffsets = { ...(next.offsets ?? {}) };
+  const nx = Math.max(-200, Math.min(400, Math.round(x))), ny = Math.max(-100, Math.min(300, Math.round(y)));
+  if (nx === 0 && ny === 0) delete offsets[key]; else offsets[key] = { x: nx, y: ny };
+  if (Object.keys(offsets).length) next.offsets = offsets; else delete next.offsets;
+  return next;
+}

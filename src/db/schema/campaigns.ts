@@ -52,24 +52,27 @@ export type EmailSocialNetwork = "facebook" | "instagram" | "x" | "tiktok" | "yo
 //
 // Section blocks (hero, cards, list, …) carry their own colours as BlockColor values, so a
 // template can be re-themed by changing the campaign/template `theme` instead of every block.
+/** Per-element nudges (px) set by dragging on the canvas; key = element name inside the block (headline, text, button …). */
+export type EmailOffsets = Record<string, { x: number; y: number }>;
+
 export type EmailBlock =
-  | { id: string; type: "text"; html: string; color?: string }
-  | { id: string; type: "heading"; text: string; color?: string }
+  | { id: string; type: "text"; html: string; color?: string; offsets?: EmailOffsets }
+  | { id: string; type: "heading"; text: string; color?: string; offsets?: EmailOffsets }
   | { id: string; type: "image"; url: string; alt: string; imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number; imageX?: number; imageY?: number }
-  | { id: string; type: "button"; label: string; url: string; backgroundColor?: string; textColor?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large"; fullWidth?: boolean }
+  | { id: string; type: "button"; label: string; url: string; backgroundColor?: string; textColor?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large"; fullWidth?: boolean; offsets?: EmailOffsets }
   | { id: string; type: "divider" }
   | { id: string; type: "spacer"; height: number }
   | { id: string; type: "footer"; text: string; color?: string; bg?: BlockColor }
   | { id: string; type: "header"; brand: string; logoUrl?: string; links: EmailLinkItem[]; bg?: BlockColor; color?: BlockColor }
   | {
-      id: string; type: "hero";
+      id: string; type: "hero"; offsets?: EmailOffsets;
       eyebrow?: string; headline: string; text?: string;
       imageUrl?: string; imageAlt?: string; imagePosition?: "top" | "bottom"; imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number; imageX?: number; imageY?: number;
       buttonLabel?: string; buttonUrl?: string;
       align?: "left" | "center"; bg?: BlockColor; color?: BlockColor; accent?: BlockColor;
     }
   | {
-      id: string; type: "coupon";
+      id: string; type: "coupon"; offsets?: EmailOffsets;
       eyebrow?: string; headline: string; text?: string; code: string;
       buttonLabel?: string; buttonUrl?: string;
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor;
@@ -90,13 +93,13 @@ export type EmailBlock =
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; cardBg?: BlockColor; boxed?: boolean;
     }
   | {
-      id: string; type: "split";
+      id: string; type: "split"; offsets?: EmailOffsets;
       imageUrl: string; imageAlt?: string; imageSide: "left" | "right"; imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number; imageX?: number; imageY?: number;
       eyebrow?: string; headline: string; text?: string; buttonLabel?: string; buttonUrl?: string;
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor;
     }
   | {
-      id: string; type: "callout";
+      id: string; type: "callout"; offsets?: EmailOffsets;
       icon?: EmailIconName; headline: string; text?: string; buttonLabel?: string; buttonUrl?: string;
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; sectionBg?: BlockColor;
     }

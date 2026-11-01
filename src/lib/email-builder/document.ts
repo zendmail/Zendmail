@@ -1,4 +1,4 @@
-import type { EmailBlock, EmailTheme } from "@/db/schema";
+import type { EmailBlock, EmailOffsets, EmailTheme } from "@/db/schema";
 import { newBlockId } from "../email-blocks";
 import { coerceField, isSectionType, SECTION_DEFS, type FieldDef } from "./schema";
 import { DEFAULT_THEME, parseTheme } from "./theme";
@@ -81,7 +81,31 @@ export function sanitizeRichText(html: string): string {
 // Blocks
 // ---------------------------------------------------------------------------
 
+const OFFSET_TYPES = new Set(["heading", "text", "button", "hero", "coupon", "split", "callout"]);
+const OFFSET_KEYS = new Set(["eyebrow", "headline", "text", "button"]);
+
+function sanitizeOffsets(raw: unknown): EmailOffsets | undefined {
+  if (!isRecord(raw)) return undefined;
+  const out: EmailOffsets = {};
+  for (const [key, v] of Object.entries(raw)) {
+    if (!OFFSET_KEYS.has(key) || !isRecord(v)) continue;
+    const x = Math.round(Number(v.x)), y = Math.round(Number(v.y));
+    if (!Number.isFinite(x) || !Number.isFinite(y) || (x === 0 && y === 0)) continue;
+    out[key] = { x: Math.max(-200, Math.min(400, x)), y: Math.max(-100, Math.min(300, y)) };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 function sanitizeBlock(raw: unknown, seen: Set<string>): EmailBlock | null {
+  const block = sanitizeBlockFields(raw, seen);
+  if (block && OFFSET_TYPES.has(block.type) && isRecord(raw)) {
+    const offsets = sanitizeOffsets(raw.offsets);
+    if (offsets) (block as { offsets?: EmailOffsets }).offsets = offsets;
+  }
+  return block;
+}
+
+function sanitizeBlockFields(raw: unknown, seen: Set<string>): EmailBlock | null {
   if (!isRecord(raw) || typeof raw.type !== "string") return null;
   let id = typeof raw.id === "string" && ID_OK.test(raw.id) ? raw.id : newBlockId();
   while (seen.has(id)) id = newBlockId();

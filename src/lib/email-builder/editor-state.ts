@@ -2,7 +2,7 @@ import type { EmailBlock, EmailTheme } from "@/db/schema";
 import { createDefaultBlock, newBlockId } from "../email-blocks";
 import { withExplicitSocialStyle } from "./social-style";
 import { MAX_BLOCKS, type EmailDocument } from "./document";
-import { setBlockField } from "./catalog";
+import { setBlockField, setBlockOffset } from "./catalog";
 import { applyItemOp, type ItemOp } from "./schema";
 import { parseTheme } from "./theme";
 
@@ -95,7 +95,10 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       const i = indexOf(doc, action.id);
       if (i < 0) return state;
       let next: EmailBlock | null;
-      if (action.path === "imagePos") {
+      if (action.path.startsWith("offset:")) {
+        const [x, y] = action.value.split(",").map(Number);
+        next = setBlockOffset(doc.blocks[i], action.path.slice(7), x, y);
+      } else if (action.path === "imagePos") {
         // One undo step for a drag on the canvas: "x,y" sets both free-position fields.
         const [x, y] = action.value.split(",");
         const withX = x ? setBlockField(doc.blocks[i], "imageX", x) : doc.blocks[i];

@@ -91,6 +91,20 @@ function makeCtx(theme: EmailTheme, tracking: TrackingContext): Ctx {
 // Building blocks
 // ---------------------------------------------------------------------------
 
+/** Wraps one element so it can be selected and nudged on the canvas; outside the editor it only exists when nudged. */
+function el(block: { offsets?: Record<string, { x: number; y: number }> }, key: string, inner: string, centered = false) {
+  const o = block.offsets?.[key];
+  const editor = baseOverride !== null;
+  if (!inner || (!o && !editor)) return inner;
+  const x = o?.x ?? 0, y = o?.y ?? 0;
+  let st = "";
+  if (x > 0) st += `padding-left:${centered ? x * 2 : x}px;`;
+  else if (x < 0) st += centered ? `padding-right:${-x * 2}px;` : `margin-left:${x}px;`;
+  if (y) st += `margin-top:${y}px;`;
+  const attrs = editor ? ` data-zm-el="${key}" data-zm-x="${x}" data-zm-y="${y}"` : "";
+  return `<div${attrs}${st ? ` style="${st}"` : ""}>${inner}</div>`;
+}
+
 function section(bg: string, inner: string, opts: { top?: number; bottom?: number; x?: number; align?: "left" | "center" } = {}) {
   const { top = 36, bottom = 36, x = PAD, align = "left" } = opts;
   return `<tr><td class="px" align="${align}" bgcolor="${bg}" style="background-color:${bg};padding:${top}px ${x}px ${bottom}px ${x}px;text-align:${align};">${inner}</td></tr>`;
@@ -171,11 +185,11 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
     // ----- basic blocks -----------------------------------------------------
     case "heading": {
       const color = c.color(block.color, t.text);
-      return section(surface, `<h1 class="h1" style="margin:0;font-family:${c.head};font-size:28px;line-height:1.2;font-weight:800;color:${color};">${rich(block.text, t.primary)}</h1>`, { top: 28, bottom: 8 });
+      return section(surface, el(block, "text", `<h1 class="h1" style="margin:0;font-family:${c.head};font-size:28px;line-height:1.2;font-weight:800;color:${color};">${rich(block.text, t.primary)}</h1>`), { top: 28, bottom: 8 });
     }
     case "text": {
       const color = c.color(block.color, t.text);
-      return section(surface, `<div style="font-family:${c.body};font-size:16px;line-height:1.65;color:${color};">${block.html}</div>`, { top: 8, bottom: 8 });
+      return section(surface, el(block, "text", `<div style="font-family:${c.body};font-size:16px;line-height:1.65;color:${color};">${block.html}</div>`), { top: 8, bottom: 8 });
     }
     case "image": {
       const src = c.img(block.url);
@@ -197,7 +211,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
     case "button": {
       const bg = c.color(block.backgroundColor, t.primary);
       const fg = c.color(block.textColor, contrastOn(bg));
-      return section(surface, button(c, block.label, block.url, bg, fg, block.align ?? "left", false, { size: block.size, fullWidth: block.fullWidth }), { top: 14, bottom: 14 });
+      return section(surface, el(block, "button", button(c, block.label, block.url, bg, fg, block.align ?? "left", false, { size: block.size, fullWidth: block.fullWidth })), { top: 14, bottom: 14 });
     }
     case "divider":
       return section(surface, `<div style="height:1px;line-height:1px;font-size:1px;border-top:1px solid ${mix(t.text, "#FFFFFF", 0.86)};">&nbsp;</div>`, { top: 12, bottom: 12 });
@@ -262,10 +276,10 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const bottom = block.imagePosition !== "top" && img ? `<div style="padding-top:30px;">${img}</div>` : "";
       const inner =
         top +
-        (block.eyebrow ? `<div style="padding-bottom:14px;font-family:${c.body};font-size:12px;line-height:1.2;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${accent};">${esc(block.eyebrow)}</div>` : "") +
-        `<h1 class="h1" style="margin:0;font-family:${c.head};font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-0.015em;color:${color};">${rich(block.headline, accent)}</h1>` +
-        (block.text ? `<div style="padding-top:16px;">${para(c, block.text, mix(color, bg, 0.14), 17, align)}</div>` : "") +
-        (block.buttonLabel ? `<div style="padding-top:26px;">${button(c, block.buttonLabel, block.buttonUrl, onDark ? "#FFFFFF" : t.primary, onDark ? bg : contrastOn(t.primary), align)}</div>` : "") +
+        (block.eyebrow ? el(block, "eyebrow", `<div style="padding-bottom:14px;font-family:${c.body};font-size:12px;line-height:1.2;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${accent};">${esc(block.eyebrow)}</div>`, align === "center") : "") +
+        el(block, "headline", `<h1 class="h1" style="margin:0;font-family:${c.head};font-size:38px;line-height:1.12;font-weight:800;letter-spacing:-0.015em;color:${color};">${rich(block.headline, accent)}</h1>`, align === "center") +
+        (block.text ? `<div style="padding-top:16px;">${el(block, "text", para(c, block.text, mix(color, bg, 0.14), 17, align), align === "center")}</div>` : "") +
+        (block.buttonLabel ? `<div style="padding-top:26px;">${el(block, "button", button(c, block.buttonLabel, block.buttonUrl, onDark ? "#FFFFFF" : t.primary, onDark ? bg : contrastOn(t.primary), align), align === "center")}</div>` : "") +
         bottom;
       return section(bg, inner, { top: 44, bottom: block.imagePosition === "top" ? 44 : 40, align });
     }
@@ -279,11 +293,11 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const btnBg = onDark ? "#FFFFFF" : t.primary;
       const btnFg = onDark ? bg : contrastOn(t.primary);
       const inner =
-        (block.eyebrow ? `<div style="padding-bottom:10px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${mix(color, bg, 0.2)};">${esc(block.eyebrow)}</div>` : "") +
-        `<div class="h1" style="font-family:${c.head};font-size:52px;line-height:1.05;font-weight:800;letter-spacing:-0.02em;color:${accent};">${rich(block.headline, accent)}</div>` +
-        (block.text ? `<div style="padding-top:14px;">${para(c, block.text, mix(color, bg, 0.12), 16, "center")}</div>` : "") +
+        (block.eyebrow ? el(block, "eyebrow", `<div style="padding-bottom:10px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${mix(color, bg, 0.2)};">${esc(block.eyebrow)}</div>`, true) : "") +
+        el(block, "headline", `<div class="h1" style="font-family:${c.head};font-size:52px;line-height:1.05;font-weight:800;letter-spacing:-0.02em;color:${accent};">${rich(block.headline, accent)}</div>`, true) +
+        (block.text ? `<div style="padding-top:14px;">${el(block, "text", para(c, block.text, mix(color, bg, 0.12), 16, "center"), true)}</div>` : "") +
         `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:22px auto 0;"><tr><td align="center" style="border:2px dashed ${accent};border-radius:12px;padding:12px 26px;font-family:'Courier New',Courier,monospace;font-size:18px;line-height:1;font-weight:700;letter-spacing:0.14em;color:${color};">CODE: ${esc(block.code)}</td></tr></table>` +
-        (block.buttonLabel ? `<div style="padding-top:22px;">${button(c, block.buttonLabel, block.buttonUrl, btnBg, btnFg, "center")}</div>` : "");
+        (block.buttonLabel ? `<div style="padding-top:22px;">${el(block, "button", button(c, block.buttonLabel, block.buttonUrl, btnBg, btnFg, "center"), true)}</div>` : "");
       return section(bg, inner, { top: 40, bottom: 40, align: "center" });
     }
 
@@ -383,10 +397,10 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const accent = c.color(block.accent, t.primary);
       const img = image(c, block.imageUrl, block.imageAlt, { maxWidth: 260, radius: 16, layout: block, container: 280 });
       const text =
-        (block.eyebrow ? `<div style="padding-bottom:8px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${accent};">${esc(block.eyebrow)}</div>` : "") +
-        `<div style="font-family:${c.head};font-size:24px;line-height:1.2;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>` +
-        (block.text ? `<div style="padding-top:10px;">${para(c, block.text, mix(color, bg, 0.2), 15)}</div>` : "") +
-        (block.buttonLabel ? `<div style="padding-top:18px;">${button(c, block.buttonLabel, block.buttonUrl, accent, contrastOn(accent), "left", true)}</div>` : "");
+        (block.eyebrow ? el(block, "eyebrow", `<div style="padding-bottom:8px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${accent};">${esc(block.eyebrow)}</div>`) : "") +
+        el(block, "headline", `<div style="font-family:${c.head};font-size:24px;line-height:1.2;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>`) +
+        (block.text ? `<div style="padding-top:10px;">${el(block, "text", para(c, block.text, mix(color, bg, 0.2), 15))}</div>` : "") +
+        (block.buttonLabel ? `<div style="padding-top:18px;">${el(block, "button", button(c, block.buttonLabel, block.buttonUrl, accent, contrastOn(accent), "left", true))}</div>` : "");
       const imgCell = `<td class="stack" width="50%" valign="middle" style="width:50%;padding:0 10px 14px;">${img}</td>`;
       const textCell = `<td class="stack" width="50%" valign="middle" style="width:50%;padding:0 10px 14px;">${text}</td>`;
       return section(bg, `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${block.imageSide === "left" ? imgCell + textCell : textCell + imgCell}</tr></table>`, { top: 30, bottom: 20, x: PAD - 10 });
@@ -401,9 +415,9 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const lead = block.icon ? `<div style="padding-bottom:14px;">${icon(c, block.icon, mix(accent, bg, 0.82), accent, 48, "rounded")}</div>` : "";
       const inner =
         lead +
-        `<div style="font-family:${c.head};font-size:22px;line-height:1.25;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>` +
-        (block.text ? `<div style="padding-top:10px;">${para(c, block.text, mix(color, bg, 0.12), 15)}</div>` : "") +
-        (block.buttonLabel ? `<div style="padding-top:20px;">${button(c, block.buttonLabel, block.buttonUrl, contrastOn(bg) === "#FFFFFF" ? "#FFFFFF" : accent, contrastOn(bg) === "#FFFFFF" ? bg : contrastOn(accent), "left", true)}</div>` : "");
+        el(block, "headline", `<div style="font-family:${c.head};font-size:22px;line-height:1.25;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>`) +
+        (block.text ? `<div style="padding-top:10px;">${el(block, "text", para(c, block.text, mix(color, bg, 0.12), 15))}</div>` : "") +
+        (block.buttonLabel ? `<div style="padding-top:20px;">${el(block, "button", button(c, block.buttonLabel, block.buttonUrl, contrastOn(bg) === "#FFFFFF" ? "#FFFFFF" : accent, contrastOn(bg) === "#FFFFFF" ? bg : contrastOn(accent), "left", true))}</div>` : "");
       return section(outer, `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${bg}" style="background-color:${bg};border-radius:20px;"><tr><td style="padding:28px 28px 30px;">${inner}</td></tr></table>`, { top: 16, bottom: 16 });
     }
 

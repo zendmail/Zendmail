@@ -7,7 +7,7 @@ import { findEditableField, isRichBlock } from "@/lib/email-builder/inline-edit"
 
 export type CanvasMessage =
   | { zm: "ready" }
-  | { zm: "select"; id: string | null; part?: "image" | "button" | null }
+  | { zm: "select"; id: string | null; part?: string | null }
   | { zm: "setField"; id: string; path: string; value: string }
   | { zm: "moveTo"; id: string; index: number }
   | { zm: "action"; action: "up" | "down" | "duplicate" | "remove"; id: string | null }
@@ -56,7 +56,7 @@ export function Canvas({ doc, selectedId, scrollTarget, device, onMessage, onInl
       } else if (m.zm === "scroll") {
         scrollY.current = m.y;
       } else if (m.zm === "setField") {
-        if (typeof m.id === "string" && ["imageWidth", "imageAlign", "imageRadius", "imagePos"].includes(m.path)) onInlineEdit(m.id, m.path, String(m.value));
+        if (typeof m.id === "string" && (["imageWidth", "imageAlign", "imageRadius", "imagePos"].includes(m.path) || /^offset:[a-z]+$/.test(m.path))) onInlineEdit(m.id, m.path, String(m.value));
       } else if (m.zm === "inlineStart") {
         // Map what was double-clicked back to the field it shows; edit the innermost element that maps to exactly one field.
         const block = latest.current.doc.blocks.find((b) => b.id === m.id);

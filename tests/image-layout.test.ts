@@ -60,3 +60,22 @@ describe("free image position", () => {
     expect(next.past.length).toBe(1);
   });
 });
+
+describe("element offsets", () => {
+  const hero = { id: "h", type: "hero", headline: "Hi", buttonLabel: "Go", buttonUrl: "https://example.com", align: "left" } as EmailBlock;
+  it("nudges the button via the reducer in one undo step and renders the padding", async () => {
+    const { editorReducer, initEditorState } = await import("@/lib/email-builder/editor-state");
+    const state = initEditorState({ theme: {} as never, blocks: [hero] } as never);
+    const next = editorReducer(state, { type: "FIELD", id: "h", path: "offset:button", value: "40,-10" });
+    const block = next.doc.blocks[0] as { offsets?: Record<string, { x: number; y: number }> };
+    expect(block.offsets?.button).toEqual({ x: 40, y: -10 });
+    const html = renderEmailHtml([next.doc.blocks[0]]);
+    expect(html).toContain("padding-left:40px;margin-top:-10px;");
+    expect(editorReducer(next, { type: "FIELD", id: "h", path: "offset:button", value: "0,0" }).doc.blocks[0]).not.toHaveProperty("offsets");
+  });
+  it("sanitises offsets and leaves untouched emails unwrapped", () => {
+    const [b] = sanitizeBlocks([{ ...hero, offsets: { button: { x: 9999, y: 5 }, bogus: { x: 1, y: 1 } } }]) as { offsets?: Record<string, { x: number; y: number }> }[];
+    expect(b.offsets).toEqual({ button: { x: 400, y: 5 } });
+    expect(renderEmailHtml([hero])).not.toContain("data-zm-el");
+  });
+});

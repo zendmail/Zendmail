@@ -15,12 +15,15 @@ export const EDITOR_SCRIPT = String.raw`
     "[data-block-id]{cursor:default}" +
     ".zm-box{position:absolute;pointer-events:none;z-index:2147483000;box-sizing:border-box;border-radius:2px;transition:top .12s ease,left .12s ease,width .12s ease,height .12s ease,opacity .12s ease}" +
     ".zm-hover{border:1.5px solid " + ACCENT + "66}" +
-    ".zm-sel{border:2px solid " + ACCENT + "}" +
+    ".zm-sel{border:2px solid " + ACCENT + ";box-shadow:0 0 0 1px rgba(255,255,255,.85),inset 0 0 0 1px rgba(255,255,255,.85)}" +
     ".zm-chip{position:absolute;z-index:2147483001;transform:translateY(-100%);background:" + ACCENT + ";color:#fff;font:600 11px/1 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;letter-spacing:.02em;padding:5px 8px;border-radius:5px 5px 0 0;pointer-events:none;white-space:nowrap}" +
     ".zm-bar{position:absolute;z-index:2147483002;display:flex;gap:1px;background:#fff;border:1px solid #D9DEE8;border-radius:8px;box-shadow:0 4px 14px rgba(16,24,40,.14);padding:2px;transform:translateY(-50%)}" +
     ".zm-bar button{all:unset;box-sizing:border-box;width:26px;height:26px;display:grid;place-items:center;border-radius:6px;cursor:pointer;color:#475467}" +
     ".zm-bar button:hover{background:#F2F4F7;color:#101828}" +
     ".zm-bar button[data-a=remove]:hover{background:#FEE4E2;color:#B42318}" +
+    ".zm-el{position:absolute;pointer-events:none;z-index:2147483000;box-sizing:border-box;border:2px solid " + ACCENT + ";border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.9)}" +
+    ".zm-elhover{position:absolute;pointer-events:none;z-index:2147483000;box-sizing:border-box;border:1.5px dashed " + ACCENT + "99;border-radius:3px}" +
+    "[data-zm-el]{cursor:grab}" +
     ".zm-h{position:absolute;z-index:2147483003;width:14px;height:14px;background:#fff;border:2px solid " + ACCENT + ";border-radius:50%;transform:translate(-50%,-50%);cursor:ew-resize;box-sizing:border-box;touch-action:none}" +
     ".zm-tip{position:absolute;z-index:2147483004;background:#101828;color:#fff;font:600 11px/1 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;padding:4px 7px;border-radius:5px;pointer-events:none;transform:translate(-50%,-140%);white-space:nowrap}" +
     ".zm-drop{position:absolute;z-index:2147483004;height:3px;background:" + ACCENT + ";border-radius:2px;pointer-events:none}" +
@@ -47,7 +50,26 @@ export const EDITOR_SCRIPT = String.raw`
   hE.setAttribute("data-h", "e"); hW.setAttribute("data-h", "w");
   [hoverBox, selBox, chip, bar, hE, hW, tip, drop].forEach(function (n) { document.body.appendChild(n); });
   bar.style.display = chip.style.display = selBox.style.display = hoverBox.style.display = hE.style.display = hW.style.display = tip.style.display = drop.style.display = "none";
-  var selImgIdx = 0, dragging = false, suppressClick = false;
+  var selImgIdx = 0, dragging = false, suppressClick = false, selKey = null, hoverEl = null;
+  var elBox = el("div", "zm-el"), elHover = el("div", "zm-elhover");
+  document.body.appendChild(elBox); document.body.appendChild(elHover);
+  elBox.style.display = elHover.style.display = "none";
+  // The visible part of an element: the button itself (not its full-width row), the picture, or the text box.
+  function visual(node) {
+    if (!node) return null;
+    if (node.tagName === "IMG") return node;
+    var t = node.querySelector(":scope > table"); return t || node;
+  }
+  function selNode() {
+    var s = find(selectedId);
+    if (!s || !selKey) return null;
+    return selKey === "image" ? curImg() : s.querySelector('[data-zm-el="' + selKey + '"]');
+  }
+  function elOf(target) {
+    if (!target || !target.closest) return null;
+    return target.closest("img[data-zm-img]") || target.closest("[data-zm-el]");
+  }
+  function keyOf(node) { return node.tagName === "IMG" ? "image" : node.getAttribute("data-zm-el"); }
   function curImg() {
     var s = find(selectedId);
     if (!s) return null;
@@ -93,13 +115,20 @@ export const EDITOR_SCRIPT = String.raw`
       bar.style.top = Math.max(r.top + 18, window.scrollY + 22) + "px";
       bar.style.left = Math.max(8, r.left + r.width - bar.offsetWidth - 10) + "px";
     } else { chip.style.display = bar.style.display = "none"; }
+    var sn = selNode(), vis = sn && !editing ? visual(sn) : null;
+    if (vis) { var er = rect(vis); elBox.style.display = "block"; elBox.style.top = er.top - 2 + "px"; elBox.style.left = er.left - 2 + "px"; elBox.style.width = er.width + 4 + "px"; elBox.style.height = er.height + 4 + "px"; selBox.style.opacity = ".35"; }
+    else { elBox.style.display = "none"; selBox.style.opacity = "1"; }
+    var hv = hoverEl && hoverEl !== sn && !dragging ? visual(hoverEl) : null;
+    if (hv) { var hr = rect(hv); elHover.style.display = "block"; elHover.style.top = hr.top - 2 + "px"; elHover.style.left = hr.left - 2 + "px"; elHover.style.width = hr.width + 4 + "px"; elHover.style.height = hr.height + 4 + "px"; }
+    else elHover.style.display = "none";
     if (!dragging) placeHandles();
   }
   function blockOf(target) { return target && target.closest ? target.closest("[data-block-id]") : null; }
 
   document.addEventListener("mouseover", function (e) {
     var b = blockOf(e.target), id = b ? b.getAttribute("data-block-id") : null;
-    if (id !== hoverId) { hoverId = id; layout(); }
+    var he = elOf(e.target);
+    if (id !== hoverId || he !== hoverEl) { hoverId = id; hoverEl = he; layout(); }
   });
   document.addEventListener("mouseleave", function () { hoverId = null; layout(); });
   document.addEventListener("click", function (e) {
@@ -110,11 +139,13 @@ export const EDITOR_SCRIPT = String.raw`
     var b = blockOf(e.target);
     var id = b ? b.getAttribute("data-block-id") : null;
     var part = null;
+    selKey = null;
     if (id) {
-      var pimg = e.target.closest && e.target.closest("img[data-zm-img]");
-      if (pimg) { part = "image"; var all = Array.prototype.slice.call(b.querySelectorAll("img[data-zm-img]")); selImgIdx = Math.max(0, all.indexOf(pimg)); }
-      else if (e.target.closest && e.target.closest("a[href]")) part = "button";
-      else selImgIdx = 0;
+      var hit = elOf(e.target);
+      if (hit) {
+        selKey = keyOf(hit); part = selKey;
+        if (selKey === "image") { var all = Array.prototype.slice.call(b.querySelectorAll("img[data-zm-img]")); selImgIdx = Math.max(0, all.indexOf(hit)); }
+      } else selImgIdx = 0;
     }
     selectedId = id; layout(); post({ zm: "select", id: id, part: part });
   }, true);
@@ -193,6 +224,10 @@ export const EDITOR_SCRIPT = String.raw`
       e.preventDefault();
       gesture = { kind: "reorder", id: selectedId, to: null };
       dragging = true; try { grip.setPointerCapture(e.pointerId); } catch (x) {}
+    } else if (!img && elOf(t) && blockOf(t)) {
+      e.preventDefault();
+      var node = elOf(t);
+      gesture = { kind: "moveEl", node: node, key: keyOf(node), block: blockOf(t).getAttribute("data-block-id"), x: e.clientX, y: e.clientY, moved: false, x0: parseFloat(node.getAttribute("data-zm-x")) || 0, y0: parseFloat(node.getAttribute("data-zm-y")) || 0 };
     } else if (img && blockOf(img)) {
       e.preventDefault();
       gesture = { kind: "move", img: img, block: blockOf(img).getAttribute("data-block-id"), x: e.clientX, y: e.clientY, moved: false, y0: parseFloat(img.getAttribute("data-zm-y")) || 0 };
@@ -228,6 +263,18 @@ export const EDITOR_SCRIPT = String.raw`
       tip.style.display = "block"; tip.textContent = "Move";
       tip.style.left = (mr.left + mr.width / 2 + window.scrollX) + "px"; tip.style.top = (mr.top + window.scrollY + 8) + "px";
       selBox.style.transition = "none"; layout();
+    } else if (gesture.kind === "moveEl") {
+      var ex = e.clientX - gesture.x, ey = e.clientY - gesture.y;
+      if (!gesture.moved && Math.abs(ex) < 5 && Math.abs(ey) < 5) return;
+      if (!gesture.moved) {
+        gesture.moved = true; dragging = true; suppressClick = true; document.body.style.userSelect = "none";
+        var changed = selectedId !== gesture.block || selKey !== gesture.key;
+        selectedId = gesture.block; selKey = gesture.key;
+        if (changed) { layout(); post({ zm: "select", id: selectedId, part: selKey }); }
+      }
+      gesture.dx = ex; gesture.dy = ey;
+      gesture.node.style.transform = "translate(" + ex + "px," + ey + "px)"; gesture.node.style.position = "relative";
+      selBox.style.transition = "none"; layout();
     } else if (gesture.kind === "reorder") {
       var nodes = Array.prototype.slice.call(document.querySelectorAll("[data-block-id]")), y = e.clientY + window.scrollY, idx = nodes.length;
       for (var i = 0; i < nodes.length; i++) { var rr = rect(nodes[i]); if (y < rr.top + rr.height / 2) { idx = i; break; } }
@@ -239,10 +286,14 @@ export const EDITOR_SCRIPT = String.raw`
   });
   function endGesture(e) {
     if (!gesture) return;
-    var g = gesture; gesture = null; dragging = false;
-    if (g.kind !== "move" || g.moved) { suppressClick = true; window.setTimeout(function () { suppressClick = false; }, 60); }
+    var g = gesture; gesture = null; dragging = false; document.body.style.userSelect = "";
+    if (g.moved || g.kind === "resize" || g.kind === "reorder") { suppressClick = true; window.setTimeout(function () { suppressClick = false; }, 60); }
     tip.style.display = drop.style.display = "none"; selBox.style.transition = "";
     if (g.kind === "resize") { if (g.pct !== undefined) post({ zm: "setField", id: selectedId, path: "imageWidth", value: String(g.pct) }); }
+    else if (g.kind === "moveEl") {
+      g.node.style.transform = ""; g.node.style.position = "";
+      if (g.moved) post({ zm: "setField", id: g.block, path: "offset:" + g.key, value: Math.round(g.x0 + (g.dx || 0)) + "," + Math.round(g.y0 + (g.dy || 0)) });
+    }
     else if (g.kind === "move") {
       var ir = g.img.getBoundingClientRect(), par = g.img.parentElement, pr = par.getBoundingClientRect(), cs = window.getComputedStyle(par);
       g.img.style.transform = ""; g.img.style.position = "";
@@ -284,12 +335,12 @@ export const EDITOR_SCRIPT = String.raw`
       if (node) beginEdit(node, !!m.rich, m.id);
       pending = null;
     }
-    if (m.zm === "select") { selectedId = m.id || null; layout(); }
+    if (m.zm === "select") { if ((m.id || null) !== selectedId) selKey = null; selectedId = m.id || null; layout(); }
     if (m.zm === "scrollTo") { var n = find(m.id); if (n) { var r = rect(n); window.scrollTo({ top: Math.max(0, r.top - 60), behavior: "smooth" }); } }
     if (m.zm === "patch" && typeof m.html === "string" && !editing) {
       // Swap the email content in place (no iframe reload, so no flash and the scroll position is kept).
       var next = new DOMParser().parseFromString(m.html, "text/html");
-      var keep = function (n) { return n.nodeType === 1 && (n.classList.contains("zm-box") || n.classList.contains("zm-chip") || n.classList.contains("zm-bar") || n.classList.contains("zm-h") || n.classList.contains("zm-tip") || n.classList.contains("zm-drop") || n.tagName === "SCRIPT"); };
+      var keep = function (n) { return n.nodeType === 1 && (n.classList.contains("zm-box") || n.classList.contains("zm-chip") || n.classList.contains("zm-bar") || n.classList.contains("zm-h") || n.classList.contains("zm-el") || n.classList.contains("zm-elhover") || n.classList.contains("zm-tip") || n.classList.contains("zm-drop") || n.tagName === "SCRIPT"); };
       Array.prototype.slice.call(document.body.childNodes).forEach(function (n) { if (!keep(n)) document.body.removeChild(n); });
       var first = document.body.firstChild;
       Array.prototype.slice.call(next.body.childNodes).forEach(function (n) {
@@ -302,7 +353,7 @@ export const EDITOR_SCRIPT = String.raw`
         if (oldLink) oldLink.remove();
         if (newLink) document.head.appendChild(document.importNode(newLink, true));
       }
-      if (selectedId && !find(selectedId)) selectedId = null;
+      if (selectedId && !find(selectedId)) { selectedId = null; selKey = null; }
       layout();
     }
     if (m.zm === "restore") { window.scrollTo(0, m.y || 0); selectedId = m.id || selectedId; layout(); }
