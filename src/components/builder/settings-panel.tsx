@@ -1,13 +1,13 @@
 "use client";
 
-import { Copy, MousePointerClick, Trash2 } from "lucide-react";
+import { Copy, MousePointerClick, Shapes, Trash2 } from "lucide-react";
 import type { EmailBlock, EmailTheme } from "@/db/schema";
 import { fieldsFor, labelFor } from "@/lib/email-builder/catalog";
 import { BLOCK_ICONS } from "./block-icons";
 import { FieldList, IconBtn, type Dispatchers, type UploadScope } from "./fields";
 
-export function SettingsPanel({ block, theme, scope, d, onDuplicate, onRemove }: {
-  block: EmailBlock | null; theme: EmailTheme; scope: UploadScope; d: Dispatchers; onDuplicate: () => void; onRemove: () => void;
+export function SettingsPanel({ block, theme, scope, d, onDuplicate, onRemove, onOpenDesigner }: {
+  block: EmailBlock | null; theme: EmailTheme; scope: UploadScope; d: Dispatchers; onDuplicate: () => void; onRemove: () => void; onOpenDesigner: () => void;
 }) {
   if (!block) {
     return (
@@ -21,7 +21,8 @@ export function SettingsPanel({ block, theme, scope, d, onDuplicate, onRemove }:
     );
   }
   const Icon = BLOCK_ICONS[block.type];
-  const fields = fieldsFor(block.type);
+  // The designer owns the elements and the email picture of a Free layout, so they are not listed as form fields.
+  const fields = fieldsFor(block.type).filter((f) => !(block.type === "canvas" && (f.key === "items" || f.key === "rendered")));
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 border-b border-border px-4 py-3">
@@ -34,6 +35,12 @@ export function SettingsPanel({ block, theme, scope, d, onDuplicate, onRemove }:
         <IconBtn label="Delete section" danger onClick={onRemove}><Trash2 size={14} /></IconBtn>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4">
+        {block.type === "canvas" && (
+          <button type="button" onClick={onOpenDesigner} className="mb-4 flex w-full items-center gap-3 rounded-[12px] border border-primary/30 bg-primary-surface p-3 text-left transition-colors hover:border-primary">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-primary text-white"><Shapes size={17} /></span>
+            <span><span className="block text-[13px] font-semibold text-text-primary">Open the designer</span><span className="block text-[12px] text-text-secondary">Place text, images, buttons and shapes anywhere. {block.items.length} elements.</span></span>
+          </button>
+        )}
         {fields.length === 0 ? <p className="text-[12.5px] text-text-tertiary">This section has no settings.</p> : <FieldList key={block.id} fields={fields} block={block} theme={theme} scope={scope} d={d} />}
       </div>
     </div>

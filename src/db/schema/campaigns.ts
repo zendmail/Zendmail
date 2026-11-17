@@ -55,6 +55,15 @@ export type EmailSocialNetwork = "facebook" | "instagram" | "x" | "tiktok" | "yo
 /** Per-element nudges (px) set by dragging on the canvas; key = element name inside the block (headline, text, button …). */
 export type EmailOffsets = Record<string, { x: number; y: number }>;
 
+/** One element of a "Free layout" block, positioned in a 600px-wide design space. */
+export type CanvasItem = {
+  kind: "text" | "image" | "button" | "shape";
+  x: number; y: number; w: number; h: number;
+  text?: string; imageUrl?: string; url?: string;
+  fontSize?: number; weight?: "normal" | "bold"; align?: "left" | "center" | "right"; font?: "sans" | "serif" | "mono";
+  color?: BlockColor; bg?: BlockColor; radius?: number;
+};
+
 export type EmailBlock =
   | { id: string; type: "text"; html: string; color?: string; offsets?: EmailOffsets }
   | { id: string; type: "heading"; text: string; color?: string; offsets?: EmailOffsets }
@@ -103,6 +112,7 @@ export type EmailBlock =
       icon?: EmailIconName; headline: string; text?: string; buttonLabel?: string; buttonUrl?: string;
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; sectionBg?: BlockColor;
     }
+  | { id: string; type: "canvas"; height: number; bg?: BlockColor; link?: string; rendered?: string; items: CanvasItem[] }
   | { id: string; type: "wave"; shape: "wave" | "curve" | "dip" | "slant" | "drip" | "scallop"; top: BlockColor; bottom: BlockColor; height?: number }
   | { id: string; type: "social"; offsets?: EmailOffsets; links: { network: EmailSocialNetwork; url: string }[]; bg?: BlockColor; color?: BlockColor; iconBg?: BlockColor; iconStyle?: "brand" | "color" }
   | { id: string; type: "links"; offsets?: EmailOffsets; links: EmailLinkItem[]; style: "inline" | "pills"; bg?: BlockColor; color?: BlockColor };

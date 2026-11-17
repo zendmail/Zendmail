@@ -10,6 +10,7 @@ export type CanvasMessage =
   | { zm: "select"; id: string | null; part?: string | null }
   | { zm: "setField"; id: string; path: string; value: string }
   | { zm: "moveTo"; id: string; index: number }
+  | { zm: "openDesigner"; id: string }
   | { zm: "action"; action: "up" | "down" | "duplicate" | "remove"; id: string | null }
   | { zm: "history"; dir: "undo" | "redo" }
   | { zm: "scroll"; y: number }

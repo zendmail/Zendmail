@@ -1,7 +1,7 @@
 import type { EmailBlock, EmailTheme } from "@/db/schema";
 import { createDefaultBlock, newBlockId } from "../email-blocks";
 import { withExplicitSocialStyle } from "./social-style";
-import { MAX_BLOCKS, type EmailDocument } from "./document";
+import { MAX_BLOCKS, sanitizeBlocks, type EmailDocument } from "./document";
 import { setBlockField, setBlockOffset } from "./catalog";
 import { applyItemOp, type ItemOp } from "./schema";
 import { parseTheme } from "./theme";
@@ -29,6 +29,7 @@ export type EditorAction =
   | { type: "DUPLICATE"; id: string }
   | { type: "MOVE"; id: string; toIndex: number }
   | { type: "FIELD"; id: string; path: string; value: string }
+  | { type: "REPLACE"; id: string; block: EmailBlock }
   | { type: "ITEM_OP"; id: string; listKey: string; op: ItemOp; index: number }
   | { type: "THEME"; theme: Partial<EmailTheme> }
   | { type: "REPLACE_THEME"; theme: EmailTheme }
@@ -111,6 +112,14 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (!next || JSON.stringify(next) === JSON.stringify(doc.blocks[i])) return state;
       const blocks = doc.blocks.map((b, n) => (n === i ? next : b));
       return commit(state, { ...doc, blocks }, `field:${action.id}:${action.path}`);
+    }
+
+    case "REPLACE": {
+      const i = indexOf(doc, action.id);
+      if (i < 0) return state;
+      const [clean] = sanitizeBlocks([action.block]);
+      if (!clean || clean.id !== action.id) return state;
+      return commit(state, { ...doc, blocks: doc.blocks.map((b, n) => (n === i ? clean : b)) }, null);
     }
 
     case "ITEM_OP": {

@@ -98,6 +98,10 @@ function sanitizeOffsets(raw: unknown): EmailOffsets | undefined {
 
 function sanitizeBlock(raw: unknown, seen: Set<string>): EmailBlock | null {
   const block = sanitizeBlockFields(raw, seen);
+  // A Free-layout element without a valid type (or position) has nothing to draw.
+  if (block && block.type === "canvas") {
+    block.items = block.items.filter((i) => ["text", "image", "button", "shape"].includes(i.kind) && [i.x, i.y, i.w, i.h].every((n) => typeof n === "number"));
+  }
   if (block && OFFSET_TYPES.has(block.type) && isRecord(raw)) {
     const offsets = sanitizeOffsets(raw.offsets);
     if (offsets) (block as { offsets?: EmailOffsets }).offsets = offsets;

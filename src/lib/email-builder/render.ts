@@ -2,6 +2,7 @@ import type { EmailBlock, EmailCardItem, EmailTheme } from "@/db/schema";
 import { appUrl as serverAppUrl } from "../app-url";
 import { EDITOR_SCRIPT } from "./editor-frame-script";
 import { applyMergeTags, SAMPLE_VARS, type MergeVars } from "./merge";
+import { CANVAS_WIDTH, canvasFont, canvasFontSize, canvasTextItems } from "./canvas";
 import { badgeAssetUrl, iconAssetUrl, resolveImageUrl, waveAssetUrl } from "./assets";
 import { socialIconStyle } from "./social-style";
 import { contrastOn, DEFAULT_THEME, fontStack, googleFontsHref, mix, parseTheme, resolveColor } from "./theme";
@@ -31,6 +32,8 @@ export type RenderOptions = {
 // Asset/link base for this render. The editor renders in the browser, where APP_URL is not available, so it
 // passes its own origin. Rendering is synchronous, so a module-level override is safe.
 let baseOverride: string | null = null;
+/** True while rendering a web page (landing page): blocks may use real positioning instead of email-safe tables. */
+let webPage = false;
 const appUrl = (path: string) => (baseOverride !== null ? `${baseOverride}${path}` : serverAppUrl(path));
 
 const WIDTH = 600;
@@ -422,6 +425,50 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       return section(outer, `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${bg}" style="background-color:${bg};border-radius:20px;"><tr><td style="padding:28px 28px 30px;">${inner}</td></tr></table>`, { top: 16, bottom: 16 });
     }
 
+    // ----- free layout ---------------------------------------------------------
+    case "canvas": {
+      const bg = c.color(block.bg, surface);
+      const H = Math.max(80, block.height);
+      const W = CANVAS_WIDTH;
+      const alt = canvasTextItems(block.items).map((i) => i.text!.trim()).join(" · ");
+      const live = baseOverride !== null || webPage;
+      if (!live) {
+        // Email: one picture (rendered in the designer) so every client shows the exact layout.
+        const src = c.img(block.rendered);
+        if (src) {
+          const pic = `<img class="fluid" src="${esc(src)}" alt="${esc(alt)}" width="${W}" style="display:block;width:100%;max-width:${W}px;height:auto;border:0;" />`;
+          return `<tr><td style="padding:0;font-size:0;line-height:0;background-color:${bg};">${block.link ? `<a href="${esc(c.link(block.link))}" target="_blank">${pic}</a>` : pic}</td></tr>`;
+        }
+        // Never opened in the designer: fall back to the elements stacked top to bottom.
+        const stacked = [...block.items].sort((a, b) => a.y - b.y || a.x - b.x).map((i) => {
+          if (i.kind === "text" && i.text) return `<div style="padding:6px 0;font-family:${canvasFont(i)};font-size:${canvasFontSize(i)}px;line-height:1.3;font-weight:${i.weight === "bold" ? 700 : 400};text-align:${i.align ?? "left"};color:${c.color(i.color, contrastOn(bg))};">${esc(i.text).replace(/\n/g, "<br/>")}</div>`;
+          if (i.kind === "button" && i.text) return `<div style="padding:8px 0;">${button(c, i.text, i.url, c.color(i.bg, t.primary), c.color(i.color, contrastOn(c.color(i.bg, t.primary))), i.align ?? "left")}</div>`;
+          if (i.kind === "image" && i.imageUrl) return `<div style="padding:6px 0;">${image(c, i.imageUrl, "", { radius: i.radius ?? 0, plain: true })}</div>`;
+          return "";
+        }).join("");
+        return section(bg, stacked, { top: 20, bottom: 20 });
+      }
+      const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(3)}%`;
+      const cqw = (px: number) => `${((px / W) * 100).toFixed(3)}cqw`;
+      const parts = block.items.map((i) => {
+        const box = `position:absolute;left:${pct(i.x, W)};top:${pct(i.y, H)};width:${pct(i.w, W)};height:${pct(i.h, H)};box-sizing:border-box;`;
+        const link = (inner: string) => (i.url && i.kind !== "button" ? `<a href="${esc(c.link(i.url))}" target="_blank" style="display:block;width:100%;height:100%;">${inner}</a>` : inner);
+        if (i.kind === "image") {
+          const src = c.img(i.imageUrl);
+          return src ? `<div style="${box}overflow:hidden;border-radius:${cqw(i.radius ?? 0)};">${link(`<img src="${esc(src)}" alt="" style="display:block;width:100%;height:100%;object-fit:cover;border:0;" />`)}</div>` : "";
+        }
+        if (i.kind === "shape") return `<div style="${box}background-color:${c.color(i.bg, t.primary)};border-radius:${cqw(i.radius ?? 0)};">${link("")}</div>`;
+        const text = esc(i.text ?? "").replace(/\n/g, "<br/>");
+        const type = `font-family:${canvasFont(i)};font-size:${cqw(canvasFontSize(i))};font-weight:${i.weight === "bold" ? 700 : 400};line-height:1.25;`;
+        if (i.kind === "button") {
+          const fill = c.color(i.bg, t.primary);
+          return `<a href="${esc(c.link(i.url))}" target="_blank" style="${box}${type}display:flex;align-items:center;justify-content:${i.align === "left" ? "flex-start" : i.align === "right" ? "flex-end" : "center"};padding:0 ${cqw(12)};background-color:${fill};color:${c.color(i.color, contrastOn(fill))};border-radius:${cqw(i.radius ?? 8)};text-decoration:none;">${text}</a>`;
+        }
+        return `<div style="${box}${type}text-align:${i.align ?? "left"};color:${c.color(i.color, contrastOn(bg))};overflow-wrap:anywhere;">${link(text)}</div>`;
+      }).join("");
+      return `<tr><td style="padding:0;background-color:${bg};"><div data-zm-designer="1" style="position:relative;width:100%;max-width:${W}px;margin:0 auto;aspect-ratio:${W} / ${H};container-type:inline-size;overflow:hidden;background-color:${bg};">${parts}</div></td></tr>`;
+    }
+
     // ----- wave divider ------------------------------------------------------
     case "wave": {
       const top = c.color(block.top, surface);
@@ -438,12 +485,14 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
 // ---------------------------------------------------------------------------
 
 export function renderEmailHtml(blocks: EmailBlock[], options: RenderOptions = {}): string {
-  const previous = baseOverride;
+  const previous = baseOverride, previousWeb = webPage;
   baseOverride = options.editor ? options.editor.baseUrl.replace(/\/$/, "") : null;
+  webPage = Boolean(options.page);
   try {
     return renderEmailHtmlInner(blocks, options);
   } finally {
     baseOverride = previous;
+    webPage = previousWeb;
   }
 }
 
@@ -544,6 +593,7 @@ export function renderEmailText(blocks: EmailBlock[], options: RenderOptions = {
         case "callout": return lines([strip(block.headline), strip(block.text), block.buttonLabel ? `${block.buttonLabel}: ${block.buttonUrl}` : undefined]);
         case "links": return block.links.map((l) => `${l.label}: ${l.url}`).join("\n");
         case "social": return block.links.map((l) => `${l.network}: ${l.url}`).join("\n");
+        case "canvas": return lines(canvasTextItems(block.items).map((i) => (i.kind === "button" && i.url ? `${i.text!.trim()}: ${i.url}` : i.text!.trim())));
         case "wave": return "";
       }
     })

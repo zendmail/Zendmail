@@ -68,7 +68,7 @@ export type CatalogGroup = { title: string; types: EmailBlockType[] };
 
 export const CATALOG: CatalogGroup[] = [
   { title: "Structure", types: ["header", "footer", "wave", "divider", "spacer"] },
-  { title: "Content", types: ["hero", "split", "heading", "text", "image", "button", "callout"] },
+  { title: "Content", types: ["hero", "split", "heading", "text", "image", "button", "callout", "canvas"] },
   { title: "Commerce", types: ["cards", "coupon", "testimonials"] },
   { title: "Navigation & social", types: ["list", "links", "social"] },
 ];
@@ -77,6 +77,7 @@ export const BLOCK_BLURBS: Record<EmailBlockType, string> = {
   header: "Logo or brand name with links",
   footer: "Sign-off, address and unsubscribe",
   wave: "Decorative shape between sections",
+  canvas: "Place text, images and buttons anywhere",
   divider: "A thin separating line",
   spacer: "Empty vertical space",
   hero: "Big headline, text, image and button",

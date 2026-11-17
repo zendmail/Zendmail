@@ -12,6 +12,7 @@ import { saveCampaignDocument, saveTemplateDocument, saveLandingDocument, saveCa
 import { AddPanel } from "./add-panel";
 import { Canvas, type CanvasMessage } from "./canvas";
 import { Outline } from "./outline";
+import { FreeLayoutDesigner } from "./free-layout-designer";
 import { SettingsPanel } from "./settings-panel";
 import { ThemeTab } from "./theme-tab";
 
@@ -43,6 +44,9 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
   const [mobile, setMobile] = React.useState<MobilePane>("preview");
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
   const [scrollTarget, setScrollTarget] = React.useState<{ id: string; n: number } | null>(null);
+  const [designerId, setDesignerId] = React.useState<string | null>(null);
+  const designerOpen = React.useRef(false);
+  React.useEffect(() => { designerOpen.current = designerId !== null; }, [designerId]);
   const [status, setStatus] = React.useState<{ s: SaveStatus; message?: string }>({ s: "saved" });
   const [title, setTitle] = React.useState(name);
   const [leaving, setLeaving] = React.useState(false);
@@ -129,6 +133,7 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
         }, 80);
       }
     }
+    else if (m.zm === "openDesigner") { select(m.id); setDesignerId(m.id); }
     else if (m.zm === "moveTo") dispatch({ type: "MOVE", id: m.id, toIndex: m.index });
     else if (m.zm === "history") dispatch({ type: m.dir === "undo" ? "UNDO" : "REDO" });
     else if (m.zm === "action" && m.id) {
@@ -141,6 +146,7 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
 
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (designerOpen.current) return; // the designer has its own shortcuts
       const mod = e.metaKey || e.ctrlKey;
       const typing = isTyping(e.target);
       const sel = stateRef.current.selectedId;
@@ -228,9 +234,23 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
         </main>
 
         <aside className={`${mobile === "settings" ? "block" : "hidden"} w-full shrink-0 border-l border-border bg-surface lg:block lg:w-[336px]`}>
-          <SettingsPanel block={selected} theme={doc.theme} scope={scope} d={dispatchers} onDuplicate={() => selected && dispatch({ type: "DUPLICATE", id: selected.id })} onRemove={() => selected && dispatch({ type: "REMOVE", id: selected.id })} />
+          <SettingsPanel block={selected} theme={doc.theme} scope={scope} d={dispatchers} onDuplicate={() => selected && dispatch({ type: "DUPLICATE", id: selected.id })} onRemove={() => selected && dispatch({ type: "REMOVE", id: selected.id })} onOpenDesigner={() => selected && setDesignerId(selected.id)} />
         </aside>
       </div>
+
+      {designerId && (() => {
+        const target = doc.blocks.find((b) => b.id === designerId);
+        return target && target.type === "canvas" ? (
+          <FreeLayoutDesigner
+            key={designerId}
+            block={target}
+            theme={doc.theme}
+            scope={scope}
+            onClose={() => setDesignerId(null)}
+            onApply={(next) => { dispatch({ type: "REPLACE", id: designerId, block: next }); setDesignerId(null); }}
+          />
+        ) : null;
+      })()}
 
       {/* Mobile pane switcher */}
       <nav className="grid h-12 shrink-0 grid-cols-3 border-t border-border bg-surface lg:hidden" aria-label="Editor view">

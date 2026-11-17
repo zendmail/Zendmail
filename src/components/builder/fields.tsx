@@ -77,7 +77,7 @@ function TextArea({ id, def, value, onChange, rich }: { id: string; def: Textish
   );
 }
 
-function ColorField({ id, value, theme, onChange }: { id: string; value: string; theme: EmailTheme; onChange: (v: string) => void }) {
+export function ColorField({ id, value, theme, onChange }: { id: string; value: string; theme: EmailTheme; onChange: (v: string) => void }) {
   const custom = value !== "" && !isToken(value);
   const hex = normalizeHex(value) ?? "#0B5FFF";
   const tokens = COLOR_TOKENS.filter((t) => !t.startsWith("on"));
@@ -98,7 +98,7 @@ function ColorField({ id, value, theme, onChange }: { id: string; value: string;
   );
 }
 
-function ImageField({ id, value, theme, scope, onChange }: { id: string; value: string; theme: EmailTheme; scope: UploadScope; onChange: (v: string) => void }) {
+export function ImageField({ id, value, theme, scope, onChange }: { id: string; value: string; theme: EmailTheme; scope: UploadScope; onChange: (v: string) => void }) {
   const file = React.useRef<HTMLInputElement>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");

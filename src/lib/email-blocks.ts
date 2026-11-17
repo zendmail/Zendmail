@@ -89,6 +89,15 @@ export function createDefaultBlock(type: EmailBlockType): EmailBlock {
       return { id, type, imageUrl: art("photo"), imageAlt: "", imageSide: "left", eyebrow: "Our story", headline: "Made for you", text: "Share what makes your product special.", buttonLabel: "Learn more", buttonUrl: "https://example.com", bg: "@surface", color: "@text", accent: "@primary" };
     case "callout":
       return { id, type, icon: "sparkles", headline: "Built to help you succeed", text: "A short supporting line goes here.", buttonLabel: "Get started", buttonUrl: "https://example.com", bg: "@secondary", sectionBg: "@surface" };
+    case "canvas":
+      return {
+        id, type, height: 320, bg: "@surface",
+        items: [
+          { kind: "text", text: "Design anything here", x: 40, y: 50, w: 520, h: 80, fontSize: 40, weight: "bold", align: "left", font: "sans", color: "@text" },
+          { kind: "text", text: "Drag, resize and place text, images and buttons wherever you like.", x: 40, y: 140, w: 360, h: 70, fontSize: 18, color: "@text" },
+          { kind: "button", text: "Get started", url: "https://example.com", x: 40, y: 240, w: 180, h: 48, fontSize: 16, weight: "bold", align: "center", bg: "@primary", color: "@onPrimary", radius: 24 },
+        ],
+      };
     case "wave":
       return { id, type, shape: "wave", top: "@surface", bottom: "@primary", height: 56 };
     case "social":

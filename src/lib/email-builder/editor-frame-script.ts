@@ -172,6 +172,7 @@ export const EDITOR_SCRIPT = String.raw`
     e.preventDefault();
     stopEditing(true);
     var id = b.getAttribute("data-block-id"), type = b.getAttribute("data-block-type");
+    if (e.target.closest && e.target.closest("[data-zm-designer]")) { selectedId = id; layout(); post({ zm: "openDesigner", id: id }); return; }
     selectedId = id; layout(); post({ zm: "select", id: id });
     var candidates = [], n = e.target;
     while (n && n !== b && candidates.length < 6) {
