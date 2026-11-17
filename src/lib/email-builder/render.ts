@@ -138,7 +138,7 @@ function para(c: Ctx, text: string, color: string, size = 16, align: "left" | "c
 
 type ImageLayout = { imageWidth?: number; imageAlign?: "left" | "center" | "right"; imageRadius?: number; imageX?: number; imageY?: number };
 
-function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: { maxWidth?: number; radius?: number; margin?: string; layout?: ImageLayout; container?: number } = {}) {
+function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: { maxWidth?: number; radius?: number; margin?: string; layout?: ImageLayout; container?: number; plain?: boolean } = {}) {
   const src = c.img(url);
   if (!src) return "";
   const { maxWidth: base = WIDTH - PAD * 2, layout, container = base } = opts;
@@ -160,7 +160,7 @@ function image(c: Ctx, url: string | undefined, alt: string | undefined, opts: {
     align = layout.imageX < 34 ? "left" : layout.imageX > 66 ? "right" : "center";
   }
   const lift = layout?.imageY ? `margin-top:${layout.imageY}px;` : "";
-  const editorAttrs = baseOverride !== null ? ` data-zm-img="1" data-zm-base="${base}" data-zm-align="${align}" data-zm-y="${layout?.imageY ?? 0}"` : "";
+  const editorAttrs = baseOverride !== null && !opts.plain ? ` data-zm-img="1" data-zm-base="${base}" data-zm-align="${align}" data-zm-y="${layout?.imageY ?? 0}"` : "";
   return `<img class="fluid" src="${esc(src)}" alt="${esc(alt ?? "")}" width="${maxWidth}"${editorAttrs} style="display:block;${sizing}height:auto;border:0;outline:none;text-decoration:none;border-radius:${radius}px;margin:${margin};${lift}" />`;
 }
 
@@ -229,7 +229,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const nav = block.links.length
         ? `<div style="padding-top:14px;font-family:${c.body};font-size:13px;font-weight:600;">${block.links.map((l) => `<a href="${esc(c.link(l.url))}" target="_blank" style="color:${mix(color, bg, 0.25)};text-decoration:none;padding:0 10px;">${esc(l.label)}</a>`).join("")}</div>`
         : "";
-      return section(bg, brand + nav, { top: 24, bottom: 22, align: "center" });
+      return section(bg, el(block, "brand", brand, true) + el(block, "nav", nav, true), { top: 24, bottom: 22, align: "center" });
     }
     case "links": {
       const bg = c.color(block.bg, surface);
@@ -238,9 +238,9 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
         const pills = block.links
           .map((l) => `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" width="60%" style="width:60%;margin:0 auto 10px;"><tr><td align="center" style="border:1.5px solid ${color};border-radius:999px;"><a href="${esc(c.link(l.url))}" target="_blank" style="display:block;padding:10px 16px;font-family:${c.body};font-size:14px;font-weight:600;color:${color};text-decoration:none;">${esc(l.label)}</a></td></tr></table>`)
           .join("");
-        return section(bg, pills, { top: 24, bottom: 14, align: "center" });
+        return section(bg, el(block, "links", pills, true), { top: 24, bottom: 14, align: "center" });
       }
-      return section(bg, `<div style="font-family:${c.body};font-size:14px;font-weight:600;">${block.links.map((l) => `<a href="${esc(c.link(l.url))}" target="_blank" style="color:${color};text-decoration:underline;padding:0 10px;">${esc(l.label)}</a>`).join("")}</div>`, { top: 18, bottom: 18, align: "center" });
+      return section(bg, el(block, "links", `<div style="font-family:${c.body};font-size:14px;font-weight:600;">${block.links.map((l) => `<a href="${esc(c.link(l.url))}" target="_blank" style="color:${color};text-decoration:underline;padding:0 10px;">${esc(l.label)}</a>`).join("")}</div>`, true), { top: 18, bottom: 18, align: "center" });
     }
     case "social": {
       const bg = c.color(block.bg, surface);
@@ -251,7 +251,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const cells = block.links
         .map((l) => `<td style="padding:0 6px;"><a href="${esc(c.link(l.url))}" target="_blank" style="text-decoration:none;">${icon(c, l.network, iconBg, iconFg, 36, "circle", brand)}</a></td>`)
         .join("");
-      return section(bg, `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>${cells}</tr></table>`, { top: 18, bottom: 18, align: "center" });
+      return section(bg, el(block, "icons", `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>${cells}</tr></table>`, true), { top: 18, bottom: 18, align: "center" });
     }
     case "footer": {
       const bg = c.color(block.bg, surface);
@@ -259,7 +259,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const unsub = c.tracking ? appUrl(`/api/t/unsubscribe/${c.tracking.recipientId}`) : "{{unsubscribe_url}}";
       return section(
         bg,
-        `<div style="font-family:${c.body};font-size:12px;line-height:1.6;color:${color};">${rich(block.text, color)}<br/><a href="${esc(unsub)}" style="color:${color};text-decoration:underline;">Unsubscribe</a></div>`,
+        el(block, "text", `<div style="font-family:${c.body};font-size:12px;line-height:1.6;color:${color};">${rich(block.text, color)}<br/><a href="${esc(unsub)}" style="color:${color};text-decoration:underline;">Unsubscribe</a></div>`, true),
         { top: 26, bottom: 30, align: "center" }
       );
     }
@@ -296,7 +296,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
         (block.eyebrow ? el(block, "eyebrow", `<div style="padding-bottom:10px;font-family:${c.body};font-size:12px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${mix(color, bg, 0.2)};">${esc(block.eyebrow)}</div>`, true) : "") +
         el(block, "headline", `<div class="h1" style="font-family:${c.head};font-size:52px;line-height:1.05;font-weight:800;letter-spacing:-0.02em;color:${accent};">${rich(block.headline, accent)}</div>`, true) +
         (block.text ? `<div style="padding-top:14px;">${el(block, "text", para(c, block.text, mix(color, bg, 0.12), 16, "center"), true)}</div>` : "") +
-        `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:22px auto 0;"><tr><td align="center" style="border:2px dashed ${accent};border-radius:12px;padding:12px 26px;font-family:'Courier New',Courier,monospace;font-size:18px;line-height:1;font-weight:700;letter-spacing:0.14em;color:${color};">CODE: ${esc(block.code)}</td></tr></table>` +
+        el(block, "code", `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:22px auto 0;"><tr><td align="center" style="border:2px dashed ${accent};border-radius:12px;padding:12px 26px;font-family:'Courier New',Courier,monospace;font-size:18px;line-height:1;font-weight:700;letter-spacing:0.14em;color:${color};">CODE: ${esc(block.code)}</td></tr></table>`, true) +
         (block.buttonLabel ? `<div style="padding-top:22px;">${el(block, "button", button(c, block.buttonLabel, block.buttonUrl, btnBg, btnFg, "center"), true)}</div>` : "");
       return section(bg, inner, { top: 40, bottom: 40, align: "center" });
     }
@@ -313,16 +313,17 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const pct = Math.floor(100 / cols);
       const cellPad = cols === 1 ? 0 : 6;
       const renderCard = (item: EmailCardItem) => {
-        const img = item.imageUrl ? image(c, item.imageUrl, item.imageAlt ?? item.title, { maxWidth: cols === 1 ? 536 : cols === 2 ? 262 : 170, radius: block.boxed ? 0 : 14 }) : "";
+        const n = block.items.indexOf(item);
+        const img = item.imageUrl ? el(block, `i${n}.image`, image(c, item.imageUrl, item.imageAlt ?? item.title, { maxWidth: cols === 1 ? 536 : cols === 2 ? 262 : 170, radius: block.boxed ? 0 : 14, plain: true })) : "";
         const textColor = block.boxed ? contrastOn(cardBg) : color;
         const lead = !item.imageUrl && item.icon ? `<div style="padding-bottom:12px;">${icon(c, item.icon, mix(accent, cardBg, 0.86), accent, 48, "rounded")}</div>` : "";
         const body =
           lead +
-          (item.badge ? `<div style="padding-bottom:8px;"><span style="display:inline-block;background-color:${accent};color:${contrastOn(accent)};font-family:${c.body};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;">${esc(item.badge)}</span></div>` : "") +
-          `<div style="font-family:${c.head};font-size:${cols === 3 ? 15 : 17}px;line-height:1.3;font-weight:700;color:${textColor};">${rich(item.title, accent)}</div>` +
-          (item.text ? `<div style="padding-top:6px;font-family:${c.body};font-size:${cols === 3 ? 13 : 14}px;line-height:1.55;color:${mix(textColor, cardBg, 0.2)};">${rich(item.text, accent)}</div>` : "") +
-          (item.price ? `<div style="padding-top:8px;font-family:${c.head};font-size:16px;font-weight:800;color:${accent};">${esc(item.price)}</div>` : "") +
-          (item.buttonLabel ? `<div style="padding-top:12px;">${button(c, item.buttonLabel, item.buttonUrl, accent, contrastOn(accent), cols === 1 ? "left" : "left", true)}</div>` : "");
+          (item.badge ? el(block, `i${n}.badge`, `<div style="padding-bottom:8px;"><span style="display:inline-block;background-color:${accent};color:${contrastOn(accent)};font-family:${c.body};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;">${esc(item.badge)}</span></div>`) : "") +
+          el(block, `i${n}.title`, `<div style="font-family:${c.head};font-size:${cols === 3 ? 15 : 17}px;line-height:1.3;font-weight:700;color:${textColor};">${rich(item.title, accent)}</div>`) +
+          (item.text ? el(block, `i${n}.text`, `<div style="padding-top:6px;font-family:${c.body};font-size:${cols === 3 ? 13 : 14}px;line-height:1.55;color:${mix(textColor, cardBg, 0.2)};">${rich(item.text, accent)}</div>`) : "") +
+          (item.price ? el(block, `i${n}.price`, `<div style="padding-top:8px;font-family:${c.head};font-size:16px;font-weight:800;color:${accent};">${esc(item.price)}</div>`) : "") +
+          (item.buttonLabel ? el(block, `i${n}.button`, `<div style="padding-top:12px;">${button(c, item.buttonLabel, item.buttonUrl, accent, contrastOn(accent), "left", true)}</div>`) : "");
         const inner = block.boxed
           ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${cardBg}" style="background-color:${cardBg};border:1px solid ${mix(contrastOn(cardBg) === "#FFFFFF" ? "#FFFFFF" : "#0B1220", cardBg, 0.84)};border-radius:16px;overflow:hidden;"><tr><td style="padding:0;font-size:0;line-height:0;">${img}</td></tr><tr><td style="padding:16px 16px 18px;">${body}</td></tr></table>`
           : `${img ? `<div style="padding-bottom:14px;">${img}</div>` : ""}<div>${body}</div>`;
@@ -339,8 +340,8 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
         })
         .join("");
       const head =
-        (block.heading ? `<div style="padding-bottom:${block.subheading ? 8 : 22}px;">${h2(c, block.heading, color, accent)}</div>` : "") +
-        (block.subheading ? `<div style="padding:0 20px 22px;">${para(c, block.subheading, mix(color, bg, 0.25), 15, "center")}</div>` : "");
+        (block.heading ? el(block, "heading", `<div style="padding-bottom:${block.subheading ? 8 : 22}px;">${h2(c, block.heading, color, accent)}</div>`, true) : "") +
+        (block.subheading ? el(block, "subheading", `<div style="padding:0 20px 22px;">${para(c, block.subheading, mix(color, bg, 0.25), 15, "center")}</div>`, true) : "");
       return section(bg, `${head}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rowsHtml}</table>`, { top: 36, bottom: 20, x: PAD - cellPad });
     }
 
@@ -359,15 +360,15 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
           else if (block.style === "numbers") lead = `<img src="${esc(appUrl(badgeAssetUrl(String(i + 1), accent, contrastOn(accent), 34)))}" alt="${i + 1}" width="34" height="34" style="display:block;border:0;width:34px;height:34px;" />`;
           else lead = `<div style="font-family:${c.body};font-size:22px;line-height:22px;color:${accent};">•</div>`;
           const leadW = block.style === "icons" ? 44 : block.style === "numbers" ? 34 : 28;
-          const row = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="${leadW + 14}" valign="top" style="width:${leadW + 14}px;padding-right:14px;">${lead}</td><td valign="middle" style="padding:${item.text ? 0 : 5}px 0 0;"><div style="font-family:${c.head};font-size:16px;line-height:1.35;font-weight:700;color:${rowText};">${rich(item.title, accent)}</div>${item.text ? `<div style="padding-top:3px;font-family:${c.body};font-size:14px;line-height:1.55;color:${mix(rowText, cardBg, 0.25)};">${rich(item.text, accent)}</div>` : ""}</td></tr></table>`;
+          const row = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="${leadW + 14}" valign="top" style="width:${leadW + 14}px;padding-right:14px;">${lead}</td><td valign="middle" style="padding:${item.text ? 0 : 5}px 0 0;">${el(block, `i${i}.title`, `<div style="font-family:${c.head};font-size:16px;line-height:1.35;font-weight:700;color:${rowText};">${rich(item.title, accent)}</div>`)}${item.text ? el(block, `i${i}.text`, `<div style="padding-top:3px;font-family:${c.body};font-size:14px;line-height:1.55;color:${mix(rowText, cardBg, 0.25)};">${rich(item.text, accent)}</div>`) : ""}</td></tr></table>`;
           return block.boxed
             ? `<tr><td style="padding:0 0 10px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${cardBg}" style="background-color:${cardBg};border:1px solid ${mix(contrastOn(cardBg) === "#FFFFFF" ? "#FFFFFF" : "#0B1220", cardBg, 0.84)};border-radius:14px;"><tr><td style="padding:14px 16px;">${row}</td></tr></table></td></tr>`
             : `<tr><td style="padding:0 0 18px;">${row}</td></tr>`;
         })
         .join("");
       const head =
-        (block.heading ? `<div style="padding-bottom:${block.subheading ? 8 : 22}px;">${h2(c, block.heading, color, accent, "center")}</div>` : "") +
-        (block.subheading ? `<div style="padding:0 10px 22px;">${para(c, block.subheading, mix(color, bg, 0.25), 15, "center")}</div>` : "");
+        (block.heading ? el(block, "heading", `<div style="padding-bottom:${block.subheading ? 8 : 22}px;">${h2(c, block.heading, color, accent, "center")}</div>`, true) : "") +
+        (block.subheading ? el(block, "subheading", `<div style="padding:0 10px 22px;">${para(c, block.subheading, mix(color, bg, 0.25), 15, "center")}</div>`, true) : "");
       return section(bg, `${head}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>`, { top: 36, bottom: 22 });
     }
 
@@ -379,14 +380,14 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const cardBg = c.color(block.cardBg, block.boxed ? (bg === "#FFFFFF" ? "#FFFFFF" : surface) : bg);
       const textColor = block.boxed ? contrastOn(cardBg) : color;
       const items = block.items
-        .map((it) => {
-          const body = `<div style="font-family:${c.body};font-size:18px;line-height:1.2;">${stars(it.rating)}</div><div style="padding-top:10px;font-family:${c.body};font-size:15px;line-height:1.65;color:${textColor};">&ldquo;${rich(it.quote, accent)}&rdquo;</div><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr><td width="46" valign="middle"><img src="${esc(appUrl(badgeAssetUrl(it.name.trim().charAt(0).toUpperCase() || "•", accent, contrastOn(accent), 38)))}" alt="" width="38" height="38" style="display:block;border:0;width:38px;height:38px;" /></td><td valign="middle"><div style="font-family:${c.head};font-size:14px;font-weight:700;color:${textColor};">${esc(it.name)}</div>${it.role ? `<div style="font-family:${c.body};font-size:12px;color:${mix(textColor, cardBg, 0.35)};">${esc(it.role)}</div>` : ""}</td></tr></table>`;
+        .map((it, n) => {
+          const body = `<div style="font-family:${c.body};font-size:18px;line-height:1.2;">${stars(it.rating)}</div>${el(block, `i${n}.quote`, `<div style="padding-top:10px;font-family:${c.body};font-size:15px;line-height:1.65;color:${textColor};">&ldquo;${rich(it.quote, accent)}&rdquo;</div>`)}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;"><tr><td width="46" valign="middle"><img src="${esc(appUrl(badgeAssetUrl(it.name.trim().charAt(0).toUpperCase() || "•", accent, contrastOn(accent), 38)))}" alt="" width="38" height="38" style="display:block;border:0;width:38px;height:38px;" /></td><td valign="middle">${el(block, `i${n}.name`, `<div style="font-family:${c.head};font-size:14px;font-weight:700;color:${textColor};">${esc(it.name)}</div>`)}${it.role ? `<div style="font-family:${c.body};font-size:12px;color:${mix(textColor, cardBg, 0.35)};">${esc(it.role)}</div>` : ""}</td></tr></table>`;
           return block.boxed
             ? `<tr><td style="padding:0 0 12px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${cardBg}" style="background-color:${cardBg};border:1px solid ${mix(contrastOn(cardBg) === "#FFFFFF" ? "#FFFFFF" : "#0B1220", cardBg, 0.84)};border-radius:16px;"><tr><td style="padding:20px 22px;">${body}</td></tr></table></td></tr>`
             : `<tr><td style="padding:0 0 22px;">${body}</td></tr>`;
         })
         .join("");
-      const head = block.heading ? `<div style="padding-bottom:22px;">${h2(c, block.heading, color, accent)}</div>` : "";
+      const head = block.heading ? el(block, "heading", `<div style="padding-bottom:22px;">${h2(c, block.heading, color, accent)}</div>`, true) : "";
       return section(bg, `${head}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}</table>`, { top: 36, bottom: 18 });
     }
 
@@ -412,7 +413,7 @@ function renderBlock(block: EmailBlock, c: Ctx): string {
       const bg = c.color(block.bg, t.secondary);
       const color = c.color(block.color, contrastOn(bg));
       const accent = c.color(block.accent, contrastOn(bg) === "#FFFFFF" ? mix(t.accent, "#FFFFFF", 0.3) : t.primary);
-      const lead = block.icon ? `<div style="padding-bottom:14px;">${icon(c, block.icon, mix(accent, bg, 0.82), accent, 48, "rounded")}</div>` : "";
+      const lead = block.icon ? el(block, "icon", `<div style="padding-bottom:14px;">${icon(c, block.icon, mix(accent, bg, 0.82), accent, 48, "rounded")}</div>`) : "";
       const inner =
         lead +
         el(block, "headline", `<div style="font-family:${c.head};font-size:22px;line-height:1.25;font-weight:800;color:${color};">${rich(block.headline, accent)}</div>`) +

@@ -74,8 +74,19 @@ describe("element offsets", () => {
     expect(editorReducer(next, { type: "FIELD", id: "h", path: "offset:button", value: "0,0" }).doc.blocks[0]).not.toHaveProperty("offsets");
   });
   it("sanitises offsets and leaves untouched emails unwrapped", () => {
-    const [b] = sanitizeBlocks([{ ...hero, offsets: { button: { x: 9999, y: 5 }, bogus: { x: 1, y: 1 } } }]) as { offsets?: Record<string, { x: number; y: number }> }[];
+    const [b] = sanitizeBlocks([{ ...hero, offsets: { button: { x: 9999, y: 5 }, "bad key!": { x: 1, y: 1 } } }]) as { offsets?: Record<string, { x: number; y: number }> }[];
     expect(b.offsets).toEqual({ button: { x: 400, y: 5 } });
     expect(renderEmailHtml([hero])).not.toContain("data-zm-el");
+  });
+});
+
+describe("offsets on every block type", () => {
+  it("tags card items and nudges one card title", async () => {
+    const cards = { id: "c", type: "cards", heading: "Hi", columns: 2, items: [{ title: "A", text: "t" }, { title: "B" }] } as unknown as EmailBlock;
+    const { editorReducer, initEditorState } = await import("@/lib/email-builder/editor-state");
+    const next = editorReducer(initEditorState({ theme: {} as never, blocks: [cards] } as never), { type: "FIELD", id: "c", path: "offset:i1.title", value: "20,8" });
+    expect((next.doc.blocks[0] as { offsets?: unknown }).offsets).toEqual({ "i1.title": { x: 20, y: 8 } });
+    expect(renderEmailHtml([next.doc.blocks[0]])).toContain("padding-left:20px;margin-top:8px;");
+    expect(renderEmailHtml([cards], { editor: { baseUrl: "http://x" } } as never)).toContain('data-zm-el="i0.title"');
   });
 });

@@ -81,14 +81,14 @@ export function sanitizeRichText(html: string): string {
 // Blocks
 // ---------------------------------------------------------------------------
 
-const OFFSET_TYPES = new Set(["heading", "text", "button", "hero", "coupon", "split", "callout"]);
-const OFFSET_KEYS = new Set(["eyebrow", "headline", "text", "button"]);
+const OFFSET_TYPES = new Set(["heading", "text", "button", "hero", "coupon", "split", "callout", "header", "footer", "links", "social", "cards", "list", "testimonials"]);
+export const OFFSET_KEY = /^(?:[a-z][a-zA-Z]{0,20}|i\d{1,2}\.[a-zA-Z]{1,20})$/;
 
 function sanitizeOffsets(raw: unknown): EmailOffsets | undefined {
   if (!isRecord(raw)) return undefined;
   const out: EmailOffsets = {};
   for (const [key, v] of Object.entries(raw)) {
-    if (!OFFSET_KEYS.has(key) || !isRecord(v)) continue;
+    if (!OFFSET_KEY.test(key) || !isRecord(v)) continue;
     const x = Math.round(Number(v.x)), y = Math.round(Number(v.y));
     if (!Number.isFinite(x) || !Number.isFinite(y) || (x === 0 && y === 0)) continue;
     out[key] = { x: Math.max(-200, Math.min(400, x)), y: Math.max(-100, Math.min(300, y)) };

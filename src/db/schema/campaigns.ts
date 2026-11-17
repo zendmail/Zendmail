@@ -62,8 +62,8 @@ export type EmailBlock =
   | { id: string; type: "button"; label: string; url: string; backgroundColor?: string; textColor?: string; align?: "left" | "center" | "right"; size?: "small" | "medium" | "large"; fullWidth?: boolean; offsets?: EmailOffsets }
   | { id: string; type: "divider" }
   | { id: string; type: "spacer"; height: number }
-  | { id: string; type: "footer"; text: string; color?: string; bg?: BlockColor }
-  | { id: string; type: "header"; brand: string; logoUrl?: string; links: EmailLinkItem[]; bg?: BlockColor; color?: BlockColor }
+  | { id: string; type: "footer"; offsets?: EmailOffsets; text: string; color?: string; bg?: BlockColor }
+  | { id: string; type: "header"; offsets?: EmailOffsets; brand: string; logoUrl?: string; links: EmailLinkItem[]; bg?: BlockColor; color?: BlockColor }
   | {
       id: string; type: "hero"; offsets?: EmailOffsets;
       eyebrow?: string; headline: string; text?: string;
@@ -78,17 +78,17 @@ export type EmailBlock =
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor;
     }
   | {
-      id: string; type: "cards";
+      id: string; type: "cards"; offsets?: EmailOffsets;
       heading?: string; subheading?: string; columns: 1 | 2 | 3; boxed?: boolean; items: EmailCardItem[];
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; cardBg?: BlockColor;
     }
   | {
-      id: string; type: "list";
+      id: string; type: "list"; offsets?: EmailOffsets;
       heading?: string; subheading?: string; style: "icons" | "checks" | "numbers" | "bullets"; boxed?: boolean; items: EmailListItem[];
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; cardBg?: BlockColor;
     }
   | {
-      id: string; type: "testimonials";
+      id: string; type: "testimonials"; offsets?: EmailOffsets;
       heading?: string; items: EmailTestimonialItem[];
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; cardBg?: BlockColor; boxed?: boolean;
     }
@@ -104,8 +104,8 @@ export type EmailBlock =
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; sectionBg?: BlockColor;
     }
   | { id: string; type: "wave"; shape: "wave" | "curve" | "dip" | "slant" | "drip" | "scallop"; top: BlockColor; bottom: BlockColor; height?: number }
-  | { id: string; type: "social"; links: { network: EmailSocialNetwork; url: string }[]; bg?: BlockColor; color?: BlockColor; iconBg?: BlockColor; iconStyle?: "brand" | "color" }
-  | { id: string; type: "links"; links: EmailLinkItem[]; style: "inline" | "pills"; bg?: BlockColor; color?: BlockColor };
+  | { id: string; type: "social"; offsets?: EmailOffsets; links: { network: EmailSocialNetwork; url: string }[]; bg?: BlockColor; color?: BlockColor; iconBg?: BlockColor; iconStyle?: "brand" | "color" }
+  | { id: string; type: "links"; offsets?: EmailOffsets; links: EmailLinkItem[]; style: "inline" | "pills"; bg?: BlockColor; color?: BlockColor };
 
 export type EmailBlockType = EmailBlock["type"];
 

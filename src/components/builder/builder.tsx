@@ -117,7 +117,11 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
       if (bid && part) {
         // Clicking an image/button on the canvas jumps to that element's own settings.
         window.setTimeout(() => {
-          const ids = part === "image" ? [`${bid}-imageWidth`, `${bid}-url`] : part === "button" ? [`${bid}-buttonLabel`, `${bid}-label`] : [`${bid}-${part}`, `${bid}-html`];
+          const item = /^i(\d+)\.(\w+)$/.exec(part);
+          const alias: Record<string, string> = { button: "buttonLabel", image: "imageUrl" };
+          const ids = item
+            ? [`${bid}-items.${item[1]}.${alias[item[2]] ?? item[2]}`]
+            : part === "image" ? [`${bid}-imageWidth`, `${bid}-url`] : part === "button" ? [`${bid}-buttonLabel`, `${bid}-label`] : part === "icons" || part === "nav" ? [`${bid}-links`] : [`${bid}-${part}`, `${bid}-html`];
           for (const fid of ids) {
             const node = document.getElementById(fid);
             if (node) { node.scrollIntoView({ block: "center", behavior: "smooth" }); break; }

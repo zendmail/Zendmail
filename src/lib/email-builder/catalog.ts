@@ -1,6 +1,6 @@
 import type { EmailBlock, EmailBlockType, EmailOffsets } from "@/db/schema";
 import { coerceField, IMAGE_LAYOUT_FIELDS, isSectionType, SECTION_DEFS, setSectionField, type FieldDef } from "./schema";
-import { sanitizeRichText } from "./document";
+import { OFFSET_KEY, sanitizeRichText } from "./document";
 
 /**
  * One uniform description of every block type the editor can add or edit: label, grouping, and the field
@@ -94,12 +94,11 @@ export const BLOCK_BLURBS: Record<EmailBlockType, string> = {
   social: "Social network icons",
 };
 
-const OFFSET_OK = new Set(["eyebrow", "headline", "text", "button"]);
 
 /** Nudge one element of a block (canvas drag). (0, 0) removes the nudge. */
 export function setBlockOffset(block: EmailBlock, key: string, x: number, y: number): EmailBlock | null {
-  if (!OFFSET_OK.has(key) || !Number.isFinite(x) || !Number.isFinite(y)) return null;
-  if (!["heading", "text", "button", "hero", "coupon", "split", "callout"].includes(block.type)) return null;
+  if (!OFFSET_KEY.test(key) || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+  if (!["heading", "text", "button", "hero", "coupon", "split", "callout", "header", "footer", "links", "social", "cards", "list", "testimonials"].includes(block.type)) return null;
   const next = JSON.parse(JSON.stringify(block)) as EmailBlock & { offsets?: EmailOffsets };
   const offsets: EmailOffsets = { ...(next.offsets ?? {}) };
   const nx = Math.max(-200, Math.min(400, Math.round(x))), ny = Math.max(-100, Math.min(300, Math.round(y)));
