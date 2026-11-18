@@ -1,5 +1,6 @@
 "use client";
 
+import type { EmailBlock } from "@/db/schema";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, CircleAlert, Layers, LoaderCircle, Monitor, PanelsTopLeft, Palette, Plus, Redo2, Smartphone, Undo2 } from "lucide-react";
@@ -45,6 +46,8 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
   const [scrollTarget, setScrollTarget] = React.useState<{ id: string; n: number } | null>(null);
   const [designerId, setDesignerId] = React.useState<string | null>(null);
+  const [draft, setDraft] = React.useState<Extract<EmailBlock, { type: "canvas" }> | null>(null);
+  const [snapshotRequest, setSnapshotRequest] = React.useState<{ id: string; n: number } | null>(null);
   const designerOpen = React.useRef(false);
   React.useEffect(() => { designerOpen.current = designerId !== null; }, [designerId]);
   const [status, setStatus] = React.useState<{ s: SaveStatus; message?: string }>({ s: "saved" });
@@ -112,6 +115,14 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
 
   const onInlineEdit = React.useCallback((blockId: string, path: string, value: string) => dispatch({ type: "FIELD", id: blockId, path, value }), []);
 
+  /** Opens the free-layout designer for a section; other sections are first read from the canvas and converted. */
+  const startDesign = React.useCallback((id: string) => {
+    const block = stateRef.current.doc.blocks.find((x) => x.id === id);
+    if (!block || block.type === "spacer" || block.type === "divider" || block.type === "wave") return;
+    if (block.type === "canvas") { setDraft(null); setDesignerId(id); return; }
+    setSnapshotRequest({ id, n: Date.now() });
+  }, []);
+
   const onCanvas = React.useCallback((m: CanvasMessage) => {
     if (m.zm === "select") {
       select(m.id);
@@ -133,16 +144,21 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
         }, 80);
       }
     }
-    else if (m.zm === "openDesigner") { select(m.id); setDesignerId(m.id); }
+    else if (m.zm === "openDesigner") { select(m.id); startDesign(m.id); }
+    else if (m.zm === "snapshot") {
+      setDraft({ id: m.id, type: "canvas", height: m.height, bg: m.bg, items: m.items });
+      setDesignerId(m.id);
+    }
     else if (m.zm === "moveTo") dispatch({ type: "MOVE", id: m.id, toIndex: m.index });
     else if (m.zm === "history") dispatch({ type: m.dir === "undo" ? "UNDO" : "REDO" });
     else if (m.zm === "action" && m.id) {
       if (m.action === "up") move(m.id, -1);
       else if (m.action === "down") move(m.id, 1);
       else if (m.action === "duplicate") dispatch({ type: "DUPLICATE", id: m.id });
+      else if (m.action === "design") startDesign(m.id);
       else dispatch({ type: "REMOVE", id: m.id });
     }
-  }, [move, select]);
+  }, [move, select, startDesign]);
 
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -155,11 +171,12 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
       else if (!typing && sel && mod && (e.key === "d" || e.key === "D")) { e.preventDefault(); dispatch({ type: "DUPLICATE", id: sel }); }
       else if (!typing && sel && (e.key === "Delete" || e.key === "Backspace")) { e.preventDefault(); dispatch({ type: "REMOVE", id: sel }); }
       else if (!typing && sel && e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); move(sel, e.key === "ArrowUp" ? -1 : 1); }
+      else if (!typing && sel && (e.key === "Enter" || (mod && (e.key === "e" || e.key === "E"))) && !(e.target instanceof HTMLElement && ["BUTTON", "A"].includes(e.target.tagName))) { e.preventDefault(); startDesign(sel); }
       else if (e.key === "Escape" && !typing) dispatch({ type: "SELECT", id: null });
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [move]);
+  }, [move, startDesign]);
 
   const dispatchers = React.useMemo(() => ({
     setField: (path: string, value: string) => { const sel = stateRef.current.selectedId; if (sel) dispatch({ type: "FIELD", id: sel, path, value }); },
@@ -230,24 +247,26 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
         </aside>
 
         <main className={`${mobile === "preview" ? "block" : "hidden"} min-w-0 flex-1 bg-[#E9EDF4] dark:bg-[#0E1018] lg:block`} onClick={(e) => { if (e.target === e.currentTarget) select(null); }}>
-          <Canvas doc={doc} selectedId={selectedId} scrollTarget={scrollTarget} device={device} onMessage={onCanvas} onInlineEdit={onInlineEdit} />
+          <Canvas doc={doc} selectedId={selectedId} scrollTarget={scrollTarget} snapshotRequest={snapshotRequest} device={device} onMessage={onCanvas} onInlineEdit={onInlineEdit} />
         </main>
 
         <aside className={`${mobile === "settings" ? "block" : "hidden"} w-full shrink-0 border-l border-border bg-surface lg:block lg:w-[336px]`}>
-          <SettingsPanel block={selected} theme={doc.theme} scope={scope} d={dispatchers} onDuplicate={() => selected && dispatch({ type: "DUPLICATE", id: selected.id })} onRemove={() => selected && dispatch({ type: "REMOVE", id: selected.id })} onOpenDesigner={() => selected && setDesignerId(selected.id)} />
+          <SettingsPanel block={selected} theme={doc.theme} scope={scope} d={dispatchers} onDuplicate={() => selected && dispatch({ type: "DUPLICATE", id: selected.id })} onRemove={() => selected && dispatch({ type: "REMOVE", id: selected.id })} onOpenDesigner={() => selected && startDesign(selected.id)} />
         </aside>
       </div>
 
       {designerId && (() => {
-        const target = doc.blocks.find((b) => b.id === designerId);
+        const original = doc.blocks.find((b) => b.id === designerId);
+        const target = draft && draft.id === designerId ? draft : original;
         return target && target.type === "canvas" ? (
           <FreeLayoutDesigner
             key={designerId}
             block={target}
+            notice={draft && original && original.type !== "canvas" ? "This section was moved into the designer. Cancel keeps the original untouched; Apply replaces it (Ctrl+Z undoes)." : undefined}
             theme={doc.theme}
             scope={scope}
-            onClose={() => setDesignerId(null)}
-            onApply={(next) => { dispatch({ type: "REPLACE", id: designerId, block: next }); setDesignerId(null); }}
+            onClose={() => { setDesignerId(null); setDraft(null); }}
+            onApply={(next) => { dispatch({ type: "REPLACE", id: designerId, block: next }); setDesignerId(null); setDraft(null); }}
           />
         ) : null;
       })()}

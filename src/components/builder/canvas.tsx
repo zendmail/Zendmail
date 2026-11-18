@@ -11,7 +11,8 @@ export type CanvasMessage =
   | { zm: "setField"; id: string; path: string; value: string }
   | { zm: "moveTo"; id: string; index: number }
   | { zm: "openDesigner"; id: string }
-  | { zm: "action"; action: "up" | "down" | "duplicate" | "remove"; id: string | null }
+  | { zm: "snapshot"; id: string; height: number; bg: string; items: import("@/db/schema").CanvasItem[] }
+  | { zm: "action"; action: "up" | "down" | "duplicate" | "remove" | "design"; id: string | null }
   | { zm: "history"; dir: "undo" | "redo" }
   | { zm: "scroll"; y: number }
   | { zm: "inlineStart"; id: string; texts: string[]; rich: boolean }
@@ -22,8 +23,8 @@ export type CanvasMessage =
  * sandboxed iframe (scripts only, no same-origin). Updates are posted into the frame as HTML patches, so typing never
  * reloads it: no flash and the scroll position stays put.
  */
-export function Canvas({ doc, selectedId, scrollTarget, device, onMessage, onInlineEdit }: {
-  doc: EmailDocument; selectedId: string | null; scrollTarget: { id: string; n: number } | null; device: "desktop" | "mobile"; onMessage: (m: CanvasMessage) => void;
+export function Canvas({ doc, selectedId, scrollTarget, snapshotRequest, device, onMessage, onInlineEdit }: {
+  doc: EmailDocument; selectedId: string | null; scrollTarget: { id: string; n: number } | null; snapshotRequest: { id: string; n: number } | null; device: "desktop" | "mobile"; onMessage: (m: CanvasMessage) => void;
   /** Called when text was edited directly on the canvas. */
   onInlineEdit: (id: string, path: string, value: string) => void;
 }) {
@@ -95,6 +96,10 @@ export function Canvas({ doc, selectedId, scrollTarget, device, onMessage, onInl
   React.useEffect(() => {
     if (ready.current) post({ zm: "select", id: selectedId });
   }, [selectedId, post]);
+
+  React.useEffect(() => {
+    if (snapshotRequest && ready.current) post({ zm: "snapshot", id: snapshotRequest.id });
+  }, [snapshotRequest, post]);
 
   React.useEffect(() => {
     if (scrollTarget && ready.current) post({ zm: "scrollTo", id: scrollTarget.id });

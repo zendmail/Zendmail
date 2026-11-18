@@ -80,7 +80,7 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
   );
 }
 
-export function FreeLayoutDesigner({ block, theme, scope, onApply, onClose }: { block: CanvasBlock; theme: EmailTheme; scope: UploadScope; onApply: (next: CanvasBlock) => void; onClose: () => void }) {
+export function FreeLayoutDesigner({ block, theme, scope, notice, onApply, onClose }: { block: CanvasBlock; theme: EmailTheme; scope: UploadScope; notice?: string; onApply: (next: CanvasBlock) => void; onClose: () => void }) {
   const [state, setState] = React.useState<Snapshot>({ items: block.items, height: block.height, bg: block.bg ?? "", link: block.link ?? "" });
   const [sel, setSel] = React.useState<number | null>(null);
   const [guides, setGuides] = React.useState<{ x?: number; y?: number }>({});
@@ -320,6 +320,7 @@ export function FreeLayoutDesigner({ block, theme, scope, onApply, onClose }: { 
         </div>
       </header>
 
+      {notice && <p className="border-b border-border bg-primary-surface px-4 py-2 text-[12.5px] text-text-secondary">{notice}</p>}
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div ref={area} className="min-h-0 flex-1 overflow-auto p-4" onPointerDown={() => setSel(null)} tabIndex={0}>
           <div className="relative mx-auto" style={{ width: W * scale + RULER, height: state.height * scale + RULER }}>
