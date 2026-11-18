@@ -112,7 +112,7 @@ export type EmailBlock =
       icon?: EmailIconName; headline: string; text?: string; buttonLabel?: string; buttonUrl?: string;
       bg?: BlockColor; color?: BlockColor; accent?: BlockColor; sectionBg?: BlockColor;
     }
-  | { id: string; type: "canvas"; height: number; bg?: BlockColor; link?: string; rendered?: string; items: CanvasItem[] }
+  | { id: string; type: "canvas"; height: number; bg?: BlockColor; link?: string; rendered?: string; items: CanvasItem[]; source?: EmailBlock[] }
   | { id: string; type: "wave"; shape: "wave" | "curve" | "dip" | "slant" | "drip" | "scallop"; top: BlockColor; bottom: BlockColor; height?: number }
   | { id: string; type: "social"; offsets?: EmailOffsets; links: { network: EmailSocialNetwork; url: string }[]; bg?: BlockColor; color?: BlockColor; iconBg?: BlockColor; iconStyle?: "brand" | "color" }
   | { id: string; type: "links"; offsets?: EmailOffsets; links: EmailLinkItem[]; style: "inline" | "pills"; bg?: BlockColor; color?: BlockColor };

@@ -318,55 +318,66 @@ export const EDITOR_SCRIPT = String.raw`
   document.addEventListener("pointerup", endGesture);
   document.addEventListener("pointercancel", endGesture);
 
-  // Reads where everything in a section really sits, so it can be moved into the free-layout designer unchanged.
-  function snapshot(id) {
-    var b = find(id);
-    if (!b) return null;
-    var br = b.getBoundingClientRect();
-    if (!br.width) return null;
-    var k = 600 / br.width;
+  // Reads where everything in one or more sections really sits, so it can be moved into the free-layout designer unchanged.
+  function snapshotNodes(nodes, id) {
+    if (!nodes.length) return null;
+    var first = nodes[0].getBoundingClientRect();
+    if (!first.width) return null;
+    var k = 600 / first.width;
     function hex(c) {
       var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/.exec(c || "");
       if (!m || (m[4] !== undefined && parseFloat(m[4]) < 0.05)) return null;
       return "#" + [m[1], m[2], m[3]].map(function (n) { return ("0" + parseInt(n, 10).toString(16)).slice(-2); }).join("").toUpperCase();
     }
-    var td0 = b.querySelector("td"), bg = null, n0 = td0;
-    while (n0 && n0 !== document.body && !bg) { bg = hex(getComputedStyle(n0).backgroundColor); n0 = n0.parentElement; }
-    bg = bg || "#FFFFFF";
-    var items = [], consumed = [];
-    function inside(el) { for (var i = 0; i < consumed.length; i++) if (consumed[i].contains(el)) return true; return false; }
-    function box(r) { return { x: Math.round((r.left - br.left) * k), y: Math.round((r.top - br.top) * k), w: Math.max(8, Math.round(r.width * k)), h: Math.max(8, Math.round(r.height * k)) }; }
-    function radius(el) { var r = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0; return Math.round(r * k); }
-    var all = b.querySelectorAll("*");
-    for (var i = 0; i < all.length; i++) {
-      var el = all[i];
-      if (inside(el) || (el.className && typeof el.className === "string" && /zm-/.test(el.className))) continue;
-      var cs = getComputedStyle(el);
-      if (cs.display === "none" || cs.visibility === "hidden") continue;
-      var r = el.getBoundingClientRect();
-      if (r.width < 2 || r.height < 2) continue;
-      var tag = el.tagName;
-      if (tag === "IMG") {
-        if (r.width < 6 || r.height < 6) continue;
-        items.push(Object.assign({ kind: "image", imageUrl: el.currentSrc || el.src, radius: radius(el) }, box(r)));
-        consumed.push(el); continue;
-      }
-      if (tag === "TD" && el.getAttribute("bgcolor") && el.children.length === 1 && el.firstElementChild.tagName === "A") {
-        var a = el.querySelector("a"), acs = getComputedStyle(a);
-        items.push(Object.assign({ kind: "button", text: (a.innerText || "").trim(), url: a.getAttribute("href") || "", bg: hex(cs.backgroundColor) || "#0B5FFF", color: hex(acs.color) || "#FFFFFF", fontSize: Math.round(parseFloat(acs.fontSize) * k), weight: parseInt(acs.fontWeight, 10) >= 600 ? "bold" : "normal", align: "center", radius: radius(el), font: /serif/i.test(acs.fontFamily) && !/sans/i.test(acs.fontFamily) ? "serif" : "sans" }, box(r)));
-        consumed.push(el); continue;
-      }
-      var own = false;
-      for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 && c.nodeValue.trim()) { own = true; break; }
-      if (own) {
-        var ta = cs.textAlign, bb = box(r);
-        items.push(Object.assign({ kind: "text", text: (el.innerText || "").trim(), color: hex(cs.color) || "#111111", fontSize: Math.max(8, Math.round(parseFloat(cs.fontSize) * k)), weight: parseInt(cs.fontWeight, 10) >= 600 ? "bold" : "normal", align: ta === "center" ? "center" : ta === "right" || ta === "end" ? "right" : "left", font: /mono|courier/i.test(cs.fontFamily) ? "mono" : /serif|georgia|playfair|lora|merriweather/i.test(cs.fontFamily) && !/sans/i.test(cs.fontFamily) ? "serif" : "sans" }, bb, { w: Math.min(600, Math.round(bb.w * 1.04) + 2) }));
-        consumed.push(el); continue;
-      }
-      var fill = hex(cs.backgroundColor);
-      if (fill && fill !== bg && r.width * k >= 24 && r.height * k >= 24) items.push(Object.assign({ kind: "shape", bg: fill, radius: radius(el) }, box(r)));
+    function bgOf(node) {
+      var n0 = node.querySelector("td"), out = null;
+      while (n0 && n0 !== document.body && !out) { out = hex(getComputedStyle(n0).backgroundColor); n0 = n0.parentElement; }
+      return out || "#FFFFFF";
     }
-    return { zm: "snapshot", id: id, height: Math.max(80, Math.min(1600, Math.round(br.height * k))), bg: bg, items: items.slice(0, 40) };
+    var pageBg = bgOf(nodes[0]), items = [], totalH = 0;
+    nodes.forEach(function (b) {
+      var br = b.getBoundingClientRect(), oy = (br.top - first.top) * k, bg = bgOf(b), consumed = [];
+      totalH = Math.max(totalH, oy + br.height * k);
+      if (bg !== pageBg) items.push({ kind: "shape", bg: bg, radius: 0, x: 0, y: Math.round(oy), w: 600, h: Math.max(8, Math.round(br.height * k)) });
+      function inside(el) { for (var i = 0; i < consumed.length; i++) if (consumed[i].contains(el)) return true; return false; }
+      function box(r) { return { x: Math.round((r.left - br.left) * k), y: Math.round(oy + (r.top - br.top) * k), w: Math.max(8, Math.round(r.width * k)), h: Math.max(8, Math.round(r.height * k)) }; }
+      function radius(el) { var r = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0; return Math.round(r * k); }
+      var all = b.querySelectorAll("*");
+      for (var i = 0; i < all.length; i++) {
+        var el = all[i];
+        if (inside(el) || (el.className && typeof el.className === "string" && /zm-/.test(el.className))) continue;
+        var cs = getComputedStyle(el);
+        if (cs.display === "none" || cs.visibility === "hidden") continue;
+        var r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        var tag = el.tagName;
+        if (tag === "IMG") {
+          if (r.width < 6 || r.height < 6) continue;
+          items.push(Object.assign({ kind: "image", imageUrl: el.currentSrc || el.src, radius: radius(el) }, box(r)));
+          consumed.push(el); continue;
+        }
+        if (tag === "TD" && el.getAttribute("bgcolor") && el.children.length === 1 && el.firstElementChild.tagName === "A") {
+          var a = el.firstElementChild, acs = getComputedStyle(a);
+          items.push(Object.assign({ kind: "button", text: (a.innerText || "").trim(), url: a.getAttribute("href") || "", bg: hex(cs.backgroundColor) || "#0B5FFF", color: hex(acs.color) || "#FFFFFF", fontSize: Math.round(parseFloat(acs.fontSize) * k), weight: parseInt(acs.fontWeight, 10) >= 600 ? "bold" : "normal", align: "center", radius: radius(el), font: /serif/i.test(acs.fontFamily) && !/sans/i.test(acs.fontFamily) ? "serif" : "sans" }, box(r)));
+          consumed.push(el); continue;
+        }
+        var own = false;
+        for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 && c.nodeValue.trim()) { own = true; break; }
+        if (own) {
+          var ta = cs.textAlign, bb = box(r);
+          items.push(Object.assign({ kind: "text", text: (el.innerText || "").trim(), color: hex(cs.color) || "#111111", fontSize: Math.max(8, Math.round(parseFloat(cs.fontSize) * k)), weight: parseInt(cs.fontWeight, 10) >= 600 ? "bold" : "normal", align: ta === "center" ? "center" : ta === "right" || ta === "end" ? "right" : "left", font: /mono|courier/i.test(cs.fontFamily) ? "mono" : /serif|georgia|playfair|lora|merriweather/i.test(cs.fontFamily) && !/sans/i.test(cs.fontFamily) ? "serif" : "sans" }, bb, { w: Math.min(600, Math.round(bb.w * 1.04) + 2) }));
+          consumed.push(el); continue;
+        }
+        var fill = hex(cs.backgroundColor);
+        if (fill && fill !== bg && r.width * k >= 24 && r.height * k >= 24) items.push(Object.assign({ kind: "shape", bg: fill, radius: radius(el) }, box(r)));
+      }
+    });
+    return { zm: "snapshot", id: id, height: Math.max(80, Math.min(3000, Math.round(totalH))), bg: pageBg, items: items.slice(0, 120) };
+  }
+  function snapshot(id) { var b = find(id); return b ? snapshotNodes([b], id) : null; }
+  function snapshotAll(ids) {
+    var nodes = ids.map(find).filter(Boolean);
+    return snapshotNodes(nodes, "*");
   }
   document.addEventListener("keydown", function (e) {
     if (editing) return;
@@ -389,7 +400,7 @@ export const EDITOR_SCRIPT = String.raw`
       pending = null;
     }
     if (m.zm === "select") { if ((m.id || null) !== selectedId) selKey = null; selectedId = m.id || null; layout(); }
-    if (m.zm === "snapshot") { var snap = snapshot(m.id); if (snap) post(snap); }
+    if (m.zm === "snapshot") { var snap = m.ids ? snapshotAll(m.ids) : snapshot(m.id); if (snap) post(snap); }
     if (m.zm === "scrollTo") { var n = find(m.id); if (n) { var r = rect(n); window.scrollTo({ top: Math.max(0, r.top - 60), behavior: "smooth" }); } }
     if (m.zm === "patch" && typeof m.html === "string" && !editing) {
       // Swap the email content in place (no iframe reload, so no flash and the scroll position is kept).

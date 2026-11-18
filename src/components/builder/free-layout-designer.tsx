@@ -426,7 +426,7 @@ export function FreeLayoutDesigner({ block, theme, scope, notice, onApply, onClo
           ) : (
             <div className="space-y-3">
               <p className="text-[13px] font-semibold text-text-primary">Design</p>
-              <Num label="Height (px)" value={state.height} min={80} max={1600} onChange={(n) => commit({ ...stateRef.current, height: n }, "height")} />
+              <Num label="Height (px)" value={state.height} min={80} max={3000} onChange={(n) => commit({ ...stateRef.current, height: n }, "height")} />
               <Num label="Margin (px)" value={margin} min={0} max={120} onChange={setMargin} />
               <Seg value={showMargin ? "show" : "hide"} options={[{ value: "show", label: "Show margins" }, { value: "hide", label: "Hide" }]} onChange={(v) => setShowMargin(v === "show")} />
               <Field label="Grid">

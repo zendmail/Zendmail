@@ -30,6 +30,7 @@ export type EditorAction =
   | { type: "MOVE"; id: string; toIndex: number }
   | { type: "FIELD"; id: string; path: string; value: string }
   | { type: "REPLACE"; id: string; block: EmailBlock }
+  | { type: "SET_BLOCKS"; blocks: EmailBlock[] }
   | { type: "ITEM_OP"; id: string; listKey: string; op: ItemOp; index: number }
   | { type: "THEME"; theme: Partial<EmailTheme> }
   | { type: "REPLACE_THEME"; theme: EmailTheme }
@@ -112,6 +113,12 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       if (!next || JSON.stringify(next) === JSON.stringify(doc.blocks[i])) return state;
       const blocks = doc.blocks.map((b, n) => (n === i ? next : b));
       return commit(state, { ...doc, blocks }, `field:${action.id}:${action.path}`);
+    }
+
+    case "SET_BLOCKS": {
+      const blocks = sanitizeBlocks(action.blocks);
+      if (!blocks.length) return state;
+      return commit(state, { ...doc, blocks }, null);
     }
 
     case "REPLACE": {

@@ -184,12 +184,12 @@ export const SECTION_DEFS: Record<SectionType, SectionDef> = {
     label: "Free layout",
     summary: (b) => `${(b.items as unknown[] | undefined)?.length ?? 0} elements`,
     fields: [
-      { key: "height", label: "Height (px)", kind: "number", min: 80, max: 1600 },
+      { key: "height", label: "Height (px)", kind: "number", min: 80, max: 3000 },
       color("bg", "Background"),
       { key: "link", label: "Link for the whole design (emails)", kind: "url", help: "In emails the design is sent as one picture, so one link covers all of it." },
       { key: "rendered", label: "Email picture", kind: "image" },
       {
-        key: "items", label: "Elements", kind: "items", itemLabel: "Element", min: 0, max: 40,
+        key: "items", label: "Elements", kind: "items", itemLabel: "Element", min: 0, max: 120,
         defaultItem: { kind: "text", text: "New text", x: 40, y: 40, w: 240, h: 60, fontSize: 24 },
         fields: [
           { key: "kind", label: "Type", kind: "select", options: opt("text", "image", "button", "shape") },

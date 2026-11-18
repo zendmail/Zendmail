@@ -24,7 +24,7 @@ export type CanvasMessage =
  * reloads it: no flash and the scroll position stays put.
  */
 export function Canvas({ doc, selectedId, scrollTarget, snapshotRequest, device, onMessage, onInlineEdit }: {
-  doc: EmailDocument; selectedId: string | null; scrollTarget: { id: string; n: number } | null; snapshotRequest: { id: string; n: number } | null; device: "desktop" | "mobile"; onMessage: (m: CanvasMessage) => void;
+  doc: EmailDocument; selectedId: string | null; scrollTarget: { id: string; n: number } | null; snapshotRequest: { id: string; n: number; ids?: string[] } | null; device: "desktop" | "mobile"; onMessage: (m: CanvasMessage) => void;
   /** Called when text was edited directly on the canvas. */
   onInlineEdit: (id: string, path: string, value: string) => void;
 }) {
@@ -98,7 +98,7 @@ export function Canvas({ doc, selectedId, scrollTarget, snapshotRequest, device,
   }, [selectedId, post]);
 
   React.useEffect(() => {
-    if (snapshotRequest && ready.current) post({ zm: "snapshot", id: snapshotRequest.id });
+    if (snapshotRequest && ready.current) post({ zm: "snapshot", id: snapshotRequest.id, ids: snapshotRequest.ids });
   }, [snapshotRequest, post]);
 
   React.useEffect(() => {

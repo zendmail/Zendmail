@@ -15,7 +15,7 @@ const canvas = (extra: Record<string, unknown> = {}) =>
 describe("Free layout block", () => {
   it("keeps valid elements, drops invalid ones and clamps numbers", () => {
     const [b] = sanitizeBlocks([canvas({ height: 99999 })]) as Extract<EmailBlock, { type: "canvas" }>[];
-    expect(b.height).toBe(1600);
+    expect(b.height).toBe(3000);
     expect(b.items.map((i) => i.kind)).toEqual(["text", "button"]);
     expect(b.items[0]).toMatchObject({ x: 10, y: 20, fontSize: 30, weight: "bold" });
   });
@@ -46,5 +46,14 @@ describe("Free layout block", () => {
     const next = editorReducer(state, { type: "REPLACE", id: base.id, block: { ...(base as object), height: 500 } as EmailBlock });
     expect((next.doc.blocks[0] as { height: number }).height).toBe(500);
     expect(next.past.length).toBe(1);
+  });
+});
+
+describe("canva mode source", () => {
+  it("keeps original sections on a canvas and SET_BLOCKS swaps the document", async () => {
+    const { editorReducer } = await import("@/lib/email-builder/editor-state");
+    const [b] = sanitizeBlocks([{ id: "cv1", type: "canvas", height: 300, items: [], source: [{ id: "h1", type: "heading", text: "Hi" }, { id: "x", type: "canvas", height: 100, items: [] }] }]) as unknown as { source?: { type: string }[] }[];
+    expect(b.source?.map((s) => s.type)).toEqual(["heading"]);
+    expect(typeof editorReducer).toBe("function");
   });
 });

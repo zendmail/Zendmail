@@ -44,10 +44,10 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
   const [tab, setTab] = React.useState<LeftTab>("sections");
   const [mobile, setMobile] = React.useState<MobilePane>("preview");
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
-  const [scrollTarget, setScrollTarget] = React.useState<{ id: string; n: number } | null>(null);
+  const [scrollTarget, setScrollTarget] = React.useState<{ id: string; n: number; ids?: string[] } | null>(null);
   const [designerId, setDesignerId] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState<Extract<EmailBlock, { type: "canvas" }> | null>(null);
-  const [snapshotRequest, setSnapshotRequest] = React.useState<{ id: string; n: number } | null>(null);
+  const [snapshotRequest, setSnapshotRequest] = React.useState<{ id: string; n: number; ids?: string[] } | null>(null);
   const designerOpen = React.useRef(false);
   React.useEffect(() => { designerOpen.current = designerId !== null; }, [designerId]);
   const [status, setStatus] = React.useState<{ s: SaveStatus; message?: string }>({ s: "saved" });
@@ -123,6 +123,21 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
     setSnapshotRequest({ id, n: Date.now() });
   }, []);
 
+  const isCanva = doc.blocks.length === 1 && doc.blocks[0].type === "canvas";
+  /** Canva mode: the whole template becomes one free canvas, opened straight in the designer. */
+  const enterCanva = React.useCallback(() => {
+    const blocks = stateRef.current.doc.blocks;
+    if (blocks.length === 1 && blocks[0].type === "canvas") { setDraft(null); setDesignerId(blocks[0].id); return; }
+    const ids = blocks.filter((b) => b.type !== "canvas").map((b) => b.id);
+    if (!ids.length) return;
+    setSnapshotRequest({ id: "*", n: Date.now(), ids });
+  }, []);
+  /** Classic mode: brings the original sections back when the template was converted from them. */
+  const enterClassic = React.useCallback(() => {
+    const b = stateRef.current.doc.blocks[0];
+    if (b && b.type === "canvas" && b.source?.length) dispatch({ type: "SET_BLOCKS", blocks: b.source });
+  }, []);
+
   const onCanvas = React.useCallback((m: CanvasMessage) => {
     if (m.zm === "select") {
       select(m.id);
@@ -146,8 +161,10 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
     }
     else if (m.zm === "openDesigner") { select(m.id); startDesign(m.id); }
     else if (m.zm === "snapshot") {
-      setDraft({ id: m.id, type: "canvas", height: m.height, bg: m.bg, items: m.items });
-      setDesignerId(m.id);
+      const whole = m.id === "*";
+      const gid = whole ? `cv${Date.now().toString(36)}` : m.id;
+      setDraft({ id: gid, type: "canvas", height: m.height, bg: m.bg, items: m.items, ...(whole ? { source: stateRef.current.doc.blocks.filter((b) => b.type !== "canvas") } : {}) });
+      setDesignerId(gid);
     }
     else if (m.zm === "moveTo") dispatch({ type: "MOVE", id: m.id, toIndex: m.index });
     else if (m.zm === "history") dispatch({ type: m.dir === "undo" ? "UNDO" : "REDO" });
@@ -205,6 +222,10 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
             <p className="truncate px-1.5 text-[14px] font-semibold">{name}</p>
           )}
         </div>
+        <div className="hidden items-center gap-0.5 rounded-[10px] border border-border bg-surface-secondary/60 p-0.5 sm:flex" role="group" aria-label="Editor mode">
+          <button type="button" aria-pressed={!isCanva} onClick={enterClassic} title="Email-safe sections" className={`inline-flex h-7 items-center rounded-[8px] px-2.5 text-[12.5px] font-medium ${!isCanva ? "bg-surface text-text-primary shadow-[var(--shadow-xs)]" : "text-text-tertiary hover:text-text-primary"}`}>Classic</button>
+          <button type="button" aria-pressed={isCanva} onClick={enterCanva} title="Whole template as one free canvas" className={`inline-flex h-7 items-center rounded-[8px] px-2.5 text-[12.5px] font-medium ${isCanva ? "bg-surface text-text-primary shadow-[var(--shadow-xs)]" : "text-text-tertiary hover:text-text-primary"}`}>Canva</button>
+        </div>
         <div className="mx-auto hidden items-center gap-0.5 rounded-[10px] border border-border bg-surface-secondary/60 p-0.5 md:flex" role="group" aria-label="Preview device">
           {([["desktop", Monitor, "Desktop"], ["mobile", Smartphone, "Mobile"]] as const).map(([v, Icon, label]) => (
             <button key={v} type="button" aria-pressed={device === v} onClick={() => setDevice(v)} className={`inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[12.5px] font-medium transition-colors ${device === v ? "bg-surface text-text-primary shadow-[var(--shadow-xs)]" : "text-text-tertiary hover:text-text-primary"}`}><Icon size={14} /> {label}</button>
@@ -257,16 +278,17 @@ export function Builder({ kind, id, name, initialDoc, initialRevision, backHref,
 
       {designerId && (() => {
         const original = doc.blocks.find((b) => b.id === designerId);
+        const whole = !!draft && draft.id === designerId && !original;
         const target = draft && draft.id === designerId ? draft : original;
         return target && target.type === "canvas" ? (
           <FreeLayoutDesigner
             key={designerId}
             block={target}
-            notice={draft && original && original.type !== "canvas" ? "This section was moved into the designer. Cancel keeps the original untouched; Apply replaces it (Ctrl+Z undoes)." : undefined}
+            notice={whole ? "Canva mode: the whole template is one free canvas. Cancel keeps your sections untouched; Apply switches to Canva (switch back to Classic any time)." : draft && original && original.type !== "canvas" ? "This section was moved into the designer. Cancel keeps the original untouched; Apply replaces it (Ctrl+Z undoes)." : undefined}
             theme={doc.theme}
             scope={scope}
             onClose={() => { setDesignerId(null); setDraft(null); }}
-            onApply={(next) => { dispatch({ type: "REPLACE", id: designerId, block: next }); setDesignerId(null); setDraft(null); }}
+            onApply={(next) => { dispatch(whole ? { type: "SET_BLOCKS", blocks: [next] } : { type: "REPLACE", id: designerId, block: next }); setDesignerId(null); setDraft(null); }}
           />
         ) : null;
       })()}

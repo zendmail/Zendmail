@@ -100,6 +100,9 @@ function sanitizeBlock(raw: unknown, seen: Set<string>): EmailBlock | null {
   const block = sanitizeBlockFields(raw, seen);
   // A Free-layout element without a valid type (or position) has nothing to draw.
   if (block && block.type === "canvas") {
+    // The sections this design was made from, kept so "Classic" can bring them back.
+    const source = isRecord(raw) && Array.isArray(raw.source) ? sanitizeBlocks(raw.source.filter((b) => isRecord(b) && b.type !== "canvas")) : [];
+    if (source.length) block.source = source; else delete block.source;
     block.items = block.items.filter((i) => ["text", "image", "button", "shape"].includes(i.kind) && [i.x, i.y, i.w, i.h].every((n) => typeof n === "number"));
   }
   if (block && OFFSET_TYPES.has(block.type) && isRecord(raw)) {
